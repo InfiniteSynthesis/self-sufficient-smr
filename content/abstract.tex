@@ -1,0 +1,17 @@
+\begin{abstract}
+    A set of unacquainted parties, some of which may misbehave, communicate with each other over an unauthenticated and unreliable gossip network.
+    %
+    They wish to jointly replicate a state machine $\Pi$ so that each one of them has fair access to its operation.
+    %
+    Specifically, assuming parties' computational power is measured as queries to an oracle machine $H(\cdot)$, parties can issue symbols to the state machine in proportion to their queries to $H(\cdot)$ at a given fixed rate.
+    %
+    Moreover, if such access to the state machine is provided continuously in expected constant time installments we qualify it as \emph{fast fairness.}
+
+    A \emph{state machine replication} (SMR) protocol in this \emph{permissionless} setting is expected to offer consistency across parties and reliably process all symbols that honest parties wish to add to it in a timely manner despite continuously fluctuating participation and in the presence of an adversary who commands less than half of the total queries to $H(\cdot)$ per unit of time.
+
+    A number of protocols strive to offer the above guarantee together with fast settlement --- notably, the Bitcoin blockchain offers a protocol that settles against Byzantine adversaries in polylogarithmic rounds, while fairness only holds in a fail-stop adversarial model (due to the fact that Byzantine behavior can bias access to the state machine in the adversary's favor).
+    %
+    In this work, we put forth the first Byzantine-resilient protocol solving SMR in this setting with both expected-constant-time settlement and fast fairness.
+    %
+    Furthermore, our protocol is \textbf{self-sufficient} in the sense of performing its own time keeping while tolerating an adaptively fluctuating set of parties.
+\end{abstract}
