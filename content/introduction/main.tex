@@ -1,0 +1,109 @@
+\section{Introduction}
+\label{sec:introduction}
+
+In the \emph{state machine replication} (SMR) problem~\cite{CSUR:Schneider90}, a state machine $\Pi = (Q, \Sigma, \delta)$, with $\delta (q, \sigma) \rightarrow q'$ its transition function, is to be replicated across a number of parties.
+%
+At any given time, the machine $\Pi$ is at a certain state that results from the application of a sequence of symbols $\sigma_1 \ldots \sigma_n$ to its transition function.
+%
+In the most common interpretation of the problem, it is mandated that each party \party maintains a log, denoted by $\mathsf{log}_\party$, of such symbols such that the following two fundamental properties are satisfied:
+%
+\begin{cccItemize}[noitemsep]
+    \item \textbf{Consistency:}  At any two times $t,t'$, for any two parties $\party, \party'$, it holds that $\mathsf{log}_\party \not \preceq \mathsf{log}_{\party'}$ implies $ \mathsf{log}_{\party'} \preceq \mathsf{log}_\party $, where  $\preceq$ stands for the prefix relation.
+
+    \item \textbf{Liveness:} If all honest parties attempt to introduce a symbol $\sigma$ into the log, then after $u$ steps in nominal time it holds that every honest party's log will include  $\sigma$.
+\end{cccItemize}
+
+We note that the liveness property, as expressed above, refers to a notion of \emph{nominal} time, which will not be available to the parties --- indeed, to achieve it, the parties themselves may have to synchronize with each other in order to approximate nominal time using their local clocks which might be drifting:
+%
+In particular, the setting of interest here is being equipped with local clocks that run at different speeds but where there is an upper bound \clockDrift on how fast they can run compared to nominal time.
+
+To properly reflect this timing requirement into our objectives, we will focus on state machines that incorporate time into their state.
+%
+Specifically, such a state machine has the following structure $\Pi = (Q \times \mathbb{N}, \Sigma, \delta)$ and includes a special ``clock tick'' symbol $\sigma_\mathsf{ct}$ that satisfies $\delta((q,t), \sigma_\mathsf{ct})= (q,t + 1)$, for any $q, t$.
+%
+Let \round be the resulting SMR clock value and, with foresight, denote by $\varGamma$ its accuracy (cf.~\cref{subsec:drifting-clocks-and-synchronization}).
+%
+The relevant property regarding time keeping is as follows:
+%
+\begin{cccItemize}[noitemsep]
+    \item \textbf{$\varGamma$-Timekeeping:}
+    %
+    Let $\varGamma \in \mathbb{R}^+$.
+    %
+    At nominal time $t$, the state machine internal clock \round satisfies $(1+ \varGamma)^{-1} \leq  \round / t \leq (1+\varGamma) $.
+    %
+    We refer to \round as the ``SMR time.''
+\end{cccItemize}
+%
+Sometimes we will refer to an SMR that keeps its own time under the mere assumption that parties have drifting local clocks as ``self-sufficient.''
+
+Contrary to the ``classical'' SMR setting where parties have point-to-point channels and/or are capable of authenticating digital signatures issued by each other, we are interested in a setting where parties are \textbf{unacquainted}, in the sense that they have no information about each other, and communicate via an unauthenticated ``diffusion channel'' that allows the adversary to inject any arbitrary number of messages.
+%
+Moreover, parties may come and go without any announcement to others whatsoever, with their overall number fluctuating over time; hence, the common protocol design technique of counting the number of incoming messages may not be particularly helpful.
+%
+This is what sometimes is referred to as the ``permissionless'' setting.
+
+The permissionless setting suggests a rather insurmountable target for SMR as it can be easily seen by the following argument:
+%
+A set $A$ of $n$ parties is about to engage in the protocol, while another set $A'$ of equal number of parties are about to do the same --- parties in $A$ are unaware of the existence of $A'$ and vice versa.
+%
+Consider now two symbols $\sigma \neq \sigma'$ so that parties in $A$ attempt to insert $\sigma$ while parties in $A'$ attempt to insert $\sigma'$.
+%
+The adversary can expedite message delivery within the sets $A, A'$ and hence  eventually $A$, (resp., $A'$) will have to settle $\sigma$ (resp., $\sigma'$), due to Liveness.
+%
+It follows that, if we are to solve SMR in this setting, we have to assume that communication delays are always bounded, say, by a quantity \delay.
+%
+Even with bounded delays though, an adaptation of the classical FLP impossibility result \cite{JACM:FisLynPat85} can be used to show that SMR is still impossible (cf.~\cite{CSF:PasShi17}).
+%
+The challenge stems from the ability of the adversary to simulate protocol messages ``in its head'' without any cost and the fact that lack of authentication enables the adversary to serve such messages as if they were part of a legitimate protocol execution.
+%
+To circumvent this impossibility, we will assume the existence of an (random) oracle $H(\cdot)$ and impose a restriction on how many queries to $H(\cdot)$ the adversary can pose.
+%
+This small asymmetry between honest and adversarial parties turns out to be sufficient to circumvent this impossibility.
+
+The Liveness property introduced above is preconditioned on all honest parties attempting to insert the same symbol in the log.
+%
+In the permissioned setting, where all parties are acquainted with each other, it can be straightforward to create circumstances where honest parties attempt to insert the same symbol (e.g., all parties may propose symbols in a round-robin fashion).
+%
+In the permissionless setting, however, this is problematic:
+%
+Without any form of authentication or throttling, it is possible for an adversary to flood the incoming tapes with symbols it prefers while stifling useful inputs.
+%
+To address this consideration we will require an additional \emph{fairness} property for permissionless SMRs:
+%
+Any honest party gets a chance to introduce a special symbol of their choice\footnote{Think of a `coinbase' transaction in Bitcoin.} with probability
+in proportion to the number of queries posed by the party to the  oracle $H(\cdot)$.
+%
+More formally:
+%
+\begin{cccItemize}[noitemsep]
+    \item \textbf{Fairness:}
+    %
+    Let \round denote the SMR time when a special symbol $\sigma^*$ is introduced to the log of all honest parties.
+    %
+    Then, for the window of nominal time $W_\round$ ending in \round of length $B\in \mathbb{N}$, a property parameter, we say that party \party has weight $w_\party$ that is equal to the number of queries posed by \party to $H(\cdot)$ during $W_\round$.
+    %
+    Fairness requires that special symbol $\sigma^*$ is issued from an honest party \party with probability $q$ such that  $q \ge (1 - \epsilon) (w_\party / \sum_{\party'} w_{\party'} )$, for any $\epsilon\in (0, 1)$.
+\end{cccItemize}
+%
+A parameter of particular interest of the above property is the length of the time window $W_\round$; i.e., how fast does the protocol sample the distribution of queries to $H(\cdot)$ to allow a new symbol in the log.
+%
+In particular, if the length of this window is of constant size, we will refer to the property as \emph{Fast Fairness}.
+
+\input{content/introduction/results}
+\input{content/introduction/related-work}
+
+\paragraph{Organization of the paper.}
+%
+The rest of the paper is organized as follows.
+%
+In the next section we provide a technical overview of our results.
+%
+In~\cref{sec:preliminaries}, we introduce our clock, network and adversary models and provide basic notation and definitions.
+%
+Then, in~\cref{sec:reaching-weak-approx-agreement}, we solve two ``one-shot problems'' --- permissionless Weak Agreement and permissionless Approximate Agreement --- as basic building blocks.
+%
+In~\cref{sec:permissionless-smr} we present the full permissionless SMR protocol, which is based on the new parallel blockchain construction (\cref{subsec:new-parallel-blockchain}) and permissionless clock synchronization procedure (\cref{subsec:clock-sync-procedure}).
+%
+The full protocol analysis is presented in~\cref{sec:full-protocol-analysis}.
+

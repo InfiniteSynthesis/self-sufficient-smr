@@ -1,0 +1,34 @@
+\subsection{Summary of Our Results}
+\label{subsec:our-results}
+
+In this paper we put forth a protocol for SMR in the permissionless setting that, for the first time, satisfies all the properties enumerated above, while ensuring in addition that Liveness is achieved in expected-constant time (a condition usually referred to as ``fast [transaction] settlement''\footnote{We will use `symbols' and `transactions' interchangeably, as it is common in the blockchain literature.}).
+%
+See \cref{table:PoW-BA} for a comparison with existing results.
+
+\input{tables/protocol-comparison}
+
+As the table shows, our permissionless SMR protocol is the first to be ``self-sufficient'' in terms of being its own time keeper, and in the more realistic model where parties' clocks may drift.
+%
+In contrast, all existing protocols either have assumed the availability of a global clock; or that such functionality is realized by means of some heuristic, as in the case of Bitcoin~\cite{EPRINT:GarKiaLeo20}; or that parties' clocks might be off but proceed at the same speed~\cite{TCC:GarKiaShe22}.
+
+We achieve this by means of a \textbf{new clock synchronization} protocol for the permissionless setting that achieves a constant (i.e., asymptotically optimal) ``skew'' tolerating an adversary that controls less than $50\%$ of the computational power (a bound we prove to be optimal in our setting), and may be of independent interest.
+%
+Specifically, the skew of the clocks is $\bigTheta(\clockDrift \delay)$, where \clockDrift is the upper bound on clock drift rates and \delay is the maximum network latency.
+%
+Importantly, and in contrast to previous treatments of network delay in the blockchain literature (e.g.,~\cite{EC:PasSeeshe17,C:BMTZ17,EPRINT:GarKiaLeo20,EPRINT:CEMMPS20}), where the delay is specified in terms of network `rounds,' here it is specified in terms of nominal time, as in the original distributed-computing formulation~\cite{JACM:DwoLynSto88}, as in our setting the notion of `round' is a local/per-party one, and, further, may not be of uniform duration (in nominal time).
+%
+(Refer to~\cref{subsec:drifting-clocks-and-synchronization} for background on fault-tolerant clock synchronization basics.)
+
+Furthermore, the protocol allows for a fully transient participation pattern---i.e., even if every protocol participant fully functions in only one round and immediately goes offline, our protocol still remains secure---and is based on the following key components:
+%
+(i) A novel blockchain approach that utilizes \emph{parallel blockchains};
+%
+(ii) a new clock adjustment algorithm that runs \emph{approximate agreement} on top of parallel blockchains and enables parties to concentrate a clock shift value so they can adjust their local clocks maintaining a bounded overall skew and near optimal accuracy (up to an arbitrary small constant) with respect to nominal time;
+%
+and (iii) a new bootstrapping protocol that allows a newly joining party with no knowledge other than the initial setup (i.e., the genesis block) to ``catch up'' with the synchronized parties.
+%
+I.e., after bootstrapping, a new party adjusts its local clock to exhibit a  deviation from the existing online parties' clocks that is well-bounded (in the order of the network latency).
+
+Our parallel blockchain construction allows, in addition, a state update for every interval of constant duration, thus making it possible to run a PoW-based expected-constant-time consensus protocol (specifically, the ``Chain-King Consensus'' protocol in~\cite{EC:GarKiaShe24}) ``on top'' of our clock synchronization protocol, to yield a distributed ledger whose security does not rely on parties having access to a global clock, and where \textbf{all} incoming symbols (e.g., transactions) can be added to parties' logs in expected-constant time.
+%
+Furthermore, our protocol utilizes a suitable pre-agreement phase that facilitates Fast Fairness.

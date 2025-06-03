@@ -1,0 +1,135 @@
+\subsection{Related Work}
+\label{subsec:related-work}
+
+\paragraph{SMR protocols.}
+%
+In the traditional, permissioned setting~\cite{CSUR:Schneider90}, an SMR protocol is executed by a fixed set of servers that are ``acquainted'' with each other (e.g., they know each other's public key and/or have explicit point-to-point communication channels with each other).
+%
+Numerous protocols have been proposed in this setting, with more recent work focusing on efficient constructions (e.g.,~\cite{OSDI:CasLis99,PODC:YMRGA19,EC:ChaPasShi19,SP:AMNRY20,EUROSys:DKSS22}), invariably exploiting the ability of participants to issue votes in the form of signatures and have those votes counted by the recipients to ensure that a suitable quorum has been reached and parties can settle the transactions in the log.
+%
+It is clear that such techniques are not readily amenable to the permissionless setting.
+
+The only known design technique for achieving SMR in the permissionless setting with dynamic participation is based on the Bitcoin blockchain (cf.~\cite{Nak08,C:GarKiaLeo17}).
+%
+In this protocol, the oracle $H(\cdot)$ is utilized to realize a proof-of-work (PoW) functionality \cite{C:DwoNao92} with a moderate difficulty that is periodically adjusted to accommodate fluctuations in participation.
+%
+From our perspective, the protocol exhibits a number of deficiencies, namely, Liveness with a parameter proportional to the security parameter, lack of fairness (due to block withholding selfish mining attacks \cite{FC:EyaSir14,EC:GarKiaLeo15}) and Timekeeping whose accuracy is based on the participants' having access to a shared global clock (so the protocol is not self-sufficient).
+%
+Follow up work to Bitcoin addressed some of these issues individually; for example in the static participant setting, Fruitchains focused on the issue of fairness~\cite{PODC:PasShi17}, and Prism on the issue of transaction throughput~\cite{CCS:BKTFV19}.
+%
+For further overview as well as impossibility results see~\cite{CSF:PasShi17,RSA:GarKia20}.
+%
+Nonetheless, to date, no SMR protocol in the permissionless setting has been proposed that addresses all the relevant considerations simultaneously fairness and self-sufficiency.
+
+\paragraph{Clock synchronization.}
+%
+The clock synchronization problem has been studied for over four decades by the distributed computing community.
+%
+\emph{Synchronizers} are distributed fault-tolerant protocols that solve the synchronization problem --- to mention a few, pulse synchronizer \cite{JACM:LamMel85,PODC:LunLyn84,PODC:HSSD84,JACM:SriTou87,PODC:LenLos22} where parties re-synchronize their clocks periodically and one-shot synchronizer \cite{InfCon:LunLyn84,JoComp:HalMegMun85} where the goal is to synchronize clocks with initial large skews.
+%
+These traditional protocols operate in the permissioned model where the participants are known \emph{a priori} (or, parties can join upon approval from all honest parties, cf.~\cite{PODC:HSSD84}).
+
+Dolev \textit{et al.} \cite{JCSS:DHS86} showed that without setup assumptions, clock synchronization cannot be achieved with more than one-third of the corrupted parties (i.e., it requires $t < n / 3$).
+%
+With unforgeable signatures, the corruption bound can be improved to $t < n / 2$ \cite{JACM:SriTou87,PODC:LenLos22}, or to the dishonest majority setting~\cite{PODC:HSSD84}.
+%
+When the protocol allows new parties to join, a majority of the honest parties is necessary.
+
+\emph{Bounded skew} (i.e., the level of simultaneity) is a fundamental property when measuring the performance of synchronizers.
+%
+In the fault-free setting, Lynch and Welch~\cite{InfCon:LunLyn84} showed that even if clocks run at exactly the same rate, network uncertainty is impossible to overcome.
+%
+Precisely, in a network with \delay delay (again, measured in real time) and $n$ processors, it is impossible to synchronize clocks more closely than $\delay (1 - 1 / n)$.
+%
+This result was later extended to any network by \cite{JoComp:HalMegMun85}.
+%
+Since this result holds under strong assumptions, they also apply to the drifting clock model.
+%
+When it comes to pulse synchronizers, the interval between two synchronization points should be at least $\bigTheta(\delay)$ rounds apart from each other, during which the clock has already drifted for more than $\bigTheta(\clockDrift \delay)$ time.
+%
+Hence, $\bigTheta(\clockDrift \delay)$ turns out to be the (asymptotically) optimal skew one could expect.
+
+With pulse synchronization, another fundamental metric is the degree of deviation from real time, namely \emph{accuracy}.
+%
+Dolev \textit{et al.} showed that synchronization is a non-trivial task only when the target logical time stays in a linear envelope of real time \cite{JCSS:DHS86}.
+%
+Srikanth and Toueg \cite{JACM:SriTou87} showed that the logical linear envelope cannot be smaller than the physical one; and, that to stay in the same envelope with physical clocks, a majority of the participants should be honest.
+
+More recently, the clock synchronization problem has been re-considered in the context of blockchains, however in a \textbf{weaker model} of imperfect local clocks where the adversary can (only) apply an \textbf{additive} drift $\varPhi_{\mathsf{clock}}$ to the honest parties' clocks throughout the whole execution~\cite{EC:BGKRZ21,TCC:GarKiaShe22}.
+%
+In the ``classical'' setting, this model is not meaningful in that when parties are always online, their skew will never deviate further than $\varPhi_{\mathsf{clock}}$.
+%
+The above works considered this weaker model in the permissionless environment with dynamic participation where parties can join and leave as they please.
+%
+As a result, protocol participants can no longer filter messages based on the total number of parties, and newly joining parties should be able to bootstrap and synchronize their clocks with honest parties by passively listening to the network.
+%
+Since the clock model is weaker, those results in~\cite{EC:BGKRZ21,TCC:GarKiaShe22} are not directly comparable to the traditional literature with drifting clocks.
+%
+From our perspective, the key observation is that there are two challenging dimensions to clock synchronization: drifting clocks, analyzed mostly in the permissioned literature, and imperfect clocks exhibiting a bounded skew in a setting where participants join and leave the protocol at will.
+%
+Handling both these dimensions at once is a critical missing piece for achieving SMR in the permissionless setting.
+
+\paragraph{Timing models in cryptography.}
+%
+In distributed computing parlance, following the treatment from~\cite{JACM:DwoLynSto88}, the synchrony hierarchy yields three levels:
+%
+(i) Synchronous --- there are \emph{known} upper bounds on clock drift and maximum network delay.
+%
+(ii) Partially-synchronous\footnote{\cite{JACM:DwoLynSto88} also considers a second type of partially synchrony where there is an \emph{unknown} global stable time (GST) such that a \emph{known} maximum network delay holds after GST however no restriction on message transmission is imposed before GST.} --- upper bounds on clock drift and delay do exist yet they are \emph{unknown} to honest parties;
+%
+note that in~\cite{JACM:DwoLynSto88}, delay is measured by a \emph{real time clock} outside the system.
+%
+(iii) Asynchronous --- there is no upper bound on local clock speeds and message transmission (though messages between honest parties are eventually delivered).
+
+Timing shows as a tool in cryptography, nonetheless, there lacks a unified approach on modeling time and delays, especially they are ill-defined within the UC setting.
+%
+Here we provide a short survey.
+
+Timing models came into consideration for the secure concurrent zero-knowledge protocols \cite{STOC:DwoNaoSah98,C:DwoSah98}, where Dwork, Naor and Sahai proposed the $(\alpha, \beta)$-constraint (for some [known] $\alpha \le \beta$) --- for any two parties \party and  $\party'$, if \party measures $\alpha$ elapsed time on its local clock and $\party'$, starting after \party, measures $\beta$ elapsed time on its local clock, then $\party'$ finishes after \party --- an assumption that is implicit under the (appropriately-bounded) drifting clock model.
+%
+In concurrent composition of secure computation \cite{STOC:KalLinPra05}, Kalai, Lindell and Prabhakaran work in a model where local clocks run within known bounded rates and message transmission takes up to a known \delay time.
+%
+Yet, they define delay based on \emph{all clocks} --- i.e., maximum message transmission is subject to the bound on clock drifts (cf.~\cite[footnote 10]{STOC:KalLinPra05}).
+
+In the UC setting, despite its inherent asynchronous message transmission scheduling, Katz \textit{et al.} \cite{TCC:KMTZ13} model synchronous computation via the co-design of a synchronized clock and bounded-delay channel functionalities.
+%
+In more detail, real time (represented as a global round counter) is forwarded only when all honest parties claim finishing their computation in that round, and message is delivered to a party after receiving sufficiently many \textsc{fetch} requests where honest parties issue one \textsc{fetch} query per \emph{local} round, and the adversary can accumulatively increment the fetch counter for up to \delay rounds.
+%
+Recently, Canetti \textit{et al.} \cite{CSF:CHMV17} provide a treatment of the network time protocol by means of a global clock functionality with bounded additive drifts and unbounded response delays.
+%
+Aided with such global clock, they also present another functionality that measures the local clock drifts (i.e., relative time elapsed between two global clock reads).
+
+\paragraph{Parallel blockchains and \mforone PoWs.}
+%
+Parallel blockchain designs have been found applications in improving the performance of blockchain-based SMR.
+%
+For example, in ``Ledger Combiners'' \cite{TCC:FGKR20} a ranking function is proposed on top of a set of  parallel chains to accelerate transaction settlement --- for the case of non-conflicting transactions.
+%
+In~\cite{EC:GarKiaShe24}, parallel blockchains serve as a platform to port classical consensus protocols and enable building a PoW-based, expected-constant-time Byzantine agreement protocol, and achieve SMR with expected-constant settlement time, albeit for the \emph{static} participation case.
+
+The fundamental cryptographic primitive that secures parallel blockchains is \emph{\mforone Proof-of-Work}\footnote{Pronounced ``m-for-1'' PoW.}, which guarantees that the mining procedure of single chains are mutually independent (or, sub-independent with bounded statistical distance --- cf.~\cite{TCC:FGKR20}); i.e., the adversary cannot gain advantage on a specific chain by dropping from others.
+%
+The \mforone PoW is in fact a generalization of the \twoforone PoW technique introduced in~\cite{EC:GarKiaLeo15} that achieves an equitable distribution of inputs contributed into a blockchain based on the oracle queries posed by the participants to the oracle $H(\cdot)$.
+%
+In~\cite{EC:GarKiaLeo15}, the \twoforone PoW primitive was used to improve the corruption resiliency of permissionless Byzantine agreement, and has also been utilized in~\cite{PODC:PasShi17} to design a blockchain protocol in the \emph{static} participation setting that offers a notion of fairness
+(although not fast).
+%
+Combining fairness with dynamic participation and clock synchronization (i.e., self-provided timekeeping) has remained until now an open question.
+
+In~\cite{EC:GarKiaShe24}, the \mforone PoW scheme that yields SMR with expected-constant settlement time works by running $m = \bigTheta(\polylog \kappa)$ chains in parallel, where $\kappa$ is the output length of the hash function, with $\bigOmega(\polylog \kappa)$ bits allocated to each chain.
+%
+As mentioned above, this protocol is designed for the static participation setting.
+%
+Finally, note that in the PoS context, full independence among $m$ parallel chains can be achieved by separately evaluating $m$ VRFs with different nonces, which yields a simple but equivalent alternative construction to \mforone PoW.
+
+\paragraph{On transient faults and dynamic participation.}
+%
+To wrap up, our setting is typified by a fluctuating number of participants who may come and go without announcement.
+%
+As a result, at nominal time $t$ the number of participants is $n_t$, with the initial number of parties being $n_0$.
+%
+Dynamic availability has been considered in prior work~\cite{AC:PasShi17,CCS:BGKRZ18}, but not in the completely unacquainted setting as we do here:
+%
+These works operated under the assumption that a consistent public-key directory is known to all participants and the adversary may choose an arbitrary subset of registered parties to run the protocol.
+%
+In the permissionless setting, dynamic availability was considered in~\cite{C:GarKiaLeo17} under the assumption that the sequence $n_1,n_2, \ldots$ is \textbf{not} adaptively determined --- an important restriction that is not present in our modeling.

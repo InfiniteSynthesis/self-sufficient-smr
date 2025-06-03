@@ -1,0 +1,59 @@
+\begin{table*}[ht]
+    \newcommand*{\checkMark}{\ding{51}}
+    \newcommand*{\crossMark}{{\color{lightgray} \ding{55}}}
+
+    \begin{tabularx}{\textwidth}{Y @{} Y @{} Y @{} Y @{} Y}
+        \toprule
+        \textbf{Protocol}
+         & \textbf{Settlement}
+         & \textbf{Dynamic}
+         & \textbf{Timekeeping}
+         & \textbf{Drifting Clocks}
+        \\ \midrule
+        \cite{EC:GarKiaLeo15}
+         & $\bigO(\polylog \kappa)$
+         & \crossMark
+         & \crossMark
+         & \crossMark
+        \\ \midrule
+        \cite{C:GarKiaLeo17}
+         & $\bigO(\polylog \kappa)$
+         & \checkMark
+         & \crossMark
+         & \crossMark
+        \\ \midrule
+        \cite{CCS:BKTFV19}
+         & Expected $\bigO(1)^\ast$
+         & \crossMark
+         & \crossMark
+         & \crossMark
+        \\ \midrule
+        \cite{TCC:FGKR20}
+         & Expected $\bigO(1)^\ast$
+         & \checkMark
+         & \crossMark
+         & \crossMark
+        \\ \midrule
+        \cite{EC:GarKiaShe24}
+         & Expected $\bigO(1)$
+         & \crossMark
+         & \crossMark
+         & \crossMark
+        \\ \midrule
+        \cite{TCC:GarKiaShe22}
+         & $\bigO(\polylog \kappa)$
+         & \checkMark
+         & \checkMark
+         & \crossMark
+        \\ \midrule
+        This work
+         & Expected $\bigO(1)$
+         & \checkMark
+         & \checkMark
+         & \checkMark
+        \\ \bottomrule
+        
+        \caption{Comparison of permissionless SMR protocols in terms of their settlement time, ability to handle dynamic participation and timekeeping against drifting clocks. $^\ast$: Running time here refers to the optimistic case when no transactions are ``double-spent.''}
+        \label{table:PoW-BA}
+    \end{tabularx}
+\end{table*}
