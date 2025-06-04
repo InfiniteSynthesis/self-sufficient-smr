@@ -1,0 +1,60 @@
+\begin{cccProtocol}
+    {$\mathsf{{\frac{1}{2}-}ApproxAgr}(\ell, m, T, k, \eta)$}
+    {approximate-consensus}
+    {Honest-majority Weak/Approxmate Agreeement.}
+
+    \begin{algorithmic}[1]
+        \LineComment{The following code is executed in each round \round (\val is the party input)}
+
+        \If{$r \le \ell$}
+        \State{Fetch incoming chains $(\chain_1, \ldots, \chain_N)$}
+
+        \State{$\parallelChainsLocal \gets \mathsf{UpdateLocalChain}(\parallelChainsLocal, \chain_1, \ldots, \chain_N)$}
+        \Comment{Select longest valid chains for each index}
+
+        \State{Fetch incoming input-blocks $(\inputBlock_1, \ldots, \inputBlock_k)$}
+        \State{Add valid $\inputBlock_1, \ldots, \inputBlock_{k'}$ to \buffer}
+
+        \LineComment{\mforone PoW mining}
+
+        \State{$h \gets \varepsilon$, $st \gets \varepsilon$} \label{code:mforone-pow-mining-begin}
+        \For{$i = 1$ \textbf{to} $m$}
+        \State{$h \gets h \concat \stringSegment{H(\chainHead{\parallelChains_i})}{i}{m}$}
+        \State{Let $\buffer_i$ denote all \inputBlock that are valid yet not included w.r.t. $\parallelChains_i$}
+
+        \State{$st \gets st \concat \blockify(\buffer_i)$\footnote{\blockify translates a sequence of transactions to the ledger state (cf.~\cite{C:BMTZ17}).}}
+
+        \EndFor
+        \State{$u \gets H(ctr, r, h, st, val)$}
+
+        \For{$i = 1$ \textbf{to} $m$}
+        \Comment{Check if PoW succeeds on any type of block.}
+        \oneLineIf{$\stringSegment{u}{i}{m} < T$}{set $\parallelChains_i \gets \parallelChains_i \concat  \langle ctr, r, h, st, val \rangle$ and diffuse $\parallelChains_i$} \Comment{Extend chain}
+        \oneLineIf{$\stringSegmentRev{u}{i}{m} < T$}{diffuse  $\inputBlock = \langle ctr, r, h, st, val \rangle$}
+        \EndFor
+        \State{$ctr \gets ctr + 1$} \label{code:mforone-pow-mining-end}
+
+        \Else
+
+        \State{Initialize $\mathbf{V}$ to an empty array}
+
+        \For{$i$ \textbf{from} $1$ \textbf{to} $m$}
+        \Comment{Extract output from parallel chains}
+
+        \State{Initialize $\mathbf{M}$ to an empty array}
+        \For{$\inputBlock \in \block \in \chainPrefixUB{\parallelChains_i}{\ell - k}$}
+        \State{Parse \inputBlock as $\langle \cdot, \cdot, \cdot, \cdot, val \rangle$ and add $val$ to $\mathbf{M}$}
+        \EndFor
+        \State{Sort $\mathbf{M}$ and add $\med (\mathbf{M})$ to $\mathbf{V}$}
+        \EndFor
+
+        \LineComment{Decide final output}
+        \If{deciding output for weak agreement}
+        \State{Order $\mathbf{V}$ non-decreasingly and denote $n \gets |\mathbf{V}|$}
+        \oneLineIf{$\mathbf{V}_\eta = \mathbf{V}_{n - \eta}$}{output $\mathbf{V}_{\eta}$ \textbf{else} output $\bot$}
+        \ElsIf{deciding output for approximate agreement}
+        \State{Output $\textsf{avg}(\mathsf{select}(\mathsf{reduce}(\mathbf{V}, \eta), \eta))$}
+        \EndIf
+        \EndIf
+    \end{algorithmic}
+\end{cccProtocol}

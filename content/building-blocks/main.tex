@@ -1,0 +1,15 @@
+\section{Permissionless Weak/Approximate Agreement}
+\label{sec:reaching-weak-approx-agreement}
+
+In this section we consider weaker forms of agreement --- namely, weak agreement and approximate agreement as introduced in~\cref{subsec:weak-approximate-agreement} --- in the permissionless setting, and show that, when appropriately parameterized, they can be achieved in constant time against a minority of corrupted computational power.
+%
+We present two protocols: first, a protocol that is simple and easy to understand, but which tolerates only one-third of corrupted computational power.
+%
+We then improve this protocol to tolerate a dishonest minority and, in the context of AA, achieve better output quality (recall~\cref{def:approximate-agreement}).\footnote{Translating protocols presented in this section to the PoS setting (with dynamic availability) is straightforward, as the core mechanism that we use---\mforone PoW---can be emulated by independently evaluating multiple different VRF outputs.}
+
+For simplicity, we consider a single protocol invocation and present our protocols in the \emph{static} setting where parties are always online and their number is fixed yet unknown to the protocol participants, and we assume a global clock and a diffusion network with \delay-bounded delay.
+%
+Later, in~\cref{sec:permissionless-smr}, we use the weak/approximate agreement protocols as sub-routines in a dynamic environment with drifting clocks.
+
+\input{content/building-blocks/one-thrid-apa}
+\input{content/building-blocks/honest-majority-apa}

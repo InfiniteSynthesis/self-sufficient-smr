@@ -1,0 +1,101 @@
+\subsection{Weak/Approximate Agreement with Optimal Corruption Threshold}
+\label{subsec:apa-honst-majority}
+
+\cref{protocol:one-third-approximate-consensus} works only when the adversarial computational power is bounded by one-third, and in terms of AA the protocol offers concentration quality $\epsilon = 1 / 2$.
+%
+In this section we present a new protocol that improves the corruption threshold to honest majority for both Weak and Approximate Agreement.
+%
+Moreover, for Approximate Agreement, it achieves $\epsilon$-Agreement for an arbitrarily small $\epsilon > 0$ after a single invocation.
+
+We first provide some intuition on why~\cref{protocol:one-third-approximate-consensus} fails in an honest majority setting, taking Approximate Agreement as an example.
+%
+Notice that with stronger adversarial computational power, the intersection of PoW message arrays held by an honest party at the decision phase becomes too small to account for two-thirds of its PoW message array.
+%
+Thus, since the common subset is not large enough, the \textsf{reduce} and mid-point computations can no longer guarantee $\epsilon$-Agreement for $\epsilon = 1 / 2$ and Validity at the same time.
+%
+In more detail, when the adversarial messages (and inconsistent honest messages due to network delay) can account for more than one-third of the messages, parties need to trim more values from both sides of the ordered array; otherwise, Validity would not hold because the mid-point computation may take some adversarially proposed values as input.
+%
+However, trimming more than one-third of the elements from both sides hurts $\epsilon$-Agreement, as the inequalities in~\cref{lemma:one-third-apa} no longer stand.
+
+To circumvent the above situation, our solution is to categorize the different PoW messages based on their indices (in the $m$ parallel procedures) where they succeed, and select one message in each procedure to form a message array \textbf{V} of fixed size of $m$ values, thus providing a more refined approach to decide on an output value.
+
+\paragraph{Protocol description.}
+%
+Here we show how to extend \cref{protocol:one-third-approximate-consensus} to the honest majority setting.
+%
+The protocol takes two additional parameters $k$ and $\eta$, which are explained below, and runs $m$ PoW-based Byzantine agreement (BA) procedures in parallel (cf.~\cite{EC:GarKiaLeo15})\footnote{We note that, while running a single invocation of such BA procedure \cite{EC:GarKiaLeo15} for $\bigTheta(\log^2 \kappa)$ rounds yields a full agreement, terminating after constantly many rounds does not give any form of weak agreement with overwhelming probability.}.
+%
+In each procedure, it builds a PoW-based blockchain (which at a high level follows the Nakamoto protocol) and binds the mining procedure of the chain with ``input-blocks'' using \twoforone PoWs (thus, each party maintains $m$ parallel blockchains which we denote by \parallelChains).
+%
+Specifically, for a RO query output $u$ and each chain index $i \in [m]$, alongside with checking if a block that is used to extend the chain is produced by evaluating $\stringSegment{u}{i}{m} < T$, the \twoforone mining further evaluates the reverse of this chunk \stringSegmentRev{u}{i}{m}.
+%
+If $\stringSegmentRev{u}{i}{m} < T$, an input-block \inputBlock containing the miner's input is mined and \inputBlock can be included in the corresponding $i$-th blockchain.
+%
+Yet, a single RO query can produce different valid blocks to extend different blockchains, as well as an input block that can be valid on multiple chains.
+%
+Refer to~\cref{protocol:approximate-consensus} Line~\ref*{code:mforone-pow-mining-begin} to \ref*{code:mforone-pow-mining-end} to see how the \mforone and \twoforone mining procedures are bound together in order to get $m$ independent parallel instances of the PoW-based BA protocol.
+%
+Also note that, parties extend each blockchain \chain independent following the longest chain selection rule (as specified in the Bitcoin backbone protocol~\cite{EC:GarKiaLeo15} which we omit the details on chain validation and selection here), and keeps including valid and unique input-blocks with respect to \chain.
+
+After $\ell$ rounds, for each parallel chain $\chain_i$, parties extract all input-blocks in its prefix by pruning blocks based on their timestamp, subject to the ``common prefix'' parameter $k$.\footnote{In ordinary blockchains, after pruning $k$ blocks, parties hold a chain that is a prefix of any other party's with overwhelming probability, hence the term ``common prefix.'' However, since our protocol terminates in constant time, this pruning operation will lead to a common prefix only with constant probability.}
+%
+Then, these input-blocks are ordered based on their value contained and the median one is picked as the output of chain $\chain_i$.
+%
+This forms an array $\mathbf{V}$ of size $m$.
+%
+For Approximate Agreement, each party then decides its output based on its local $\mathbf{V}$ and a parameter $\eta < m / 2$, by first ordering $\mathbf{V}$ and removing the smallest and largest $\eta$ values, selecting the first element of every $\eta$ elements, and computing the average of the selected ones.
+%
+I.e., they output $\textsf{avg}(\mathsf{select}(\mathsf{reduce}(\mathsf{V}, \eta), \eta))$ and terminate.
+%
+In terms of Weak Agreement, parties output a value that accounts for a super-majority of the chains if it exists, and $\mathcal{\bot}$ otherwise.
+
+\input{protocols/approx-agr-honest-majority}
+
+Next, in the following lemma we show that running the $m$ parallel chains and terminating in a constant number of rounds in a bounded delay network yields good properties on a fraction of the chains.
+%
+The two properties in~\cref{lemma:apa} have been proven for a synchronous network in~\cite{EC:GarKiaShe24}.
+%
+Here we extend this result to the bounded-delay network setting.
+
+\begin{lemma} \label{lemma:apa}
+    There exist parameterizations of~\cref{protocol:approximate-consensus} such that the following holds.
+    %
+    Let \parallelChains and $\parallelChains'$ denote the parallel chains held by two honest parties \party and $\party'$ at the end of round $\ell$, respectively.
+    %
+    There exists a subset $S \subseteq \{1, 2, \ldots, m \}$, $|S| > m - \eta$, such that for all $i \in S$, the following properties hold on chains $\chain = \parallelChains_i$ and $\chain' = \parallelChains'_i$:
+    %
+    \begin{enumerate}[label=\FlatSteel, leftmargin=*, nosep]
+        \item \emph{\bf Agreement}: $\chainPrefixUB{\chain}{\ell - k} = \chainPrefixUB{\chain'}{\ell - k}$.
+
+        \item \emph{\bf Honest input-block majority}: More than half of the input-blocks included in $\chainPrefixUB{\chain}{\ell - k}$ and $\chainPrefixUB{\chain'}{\ell - k}$ are produced by honest parties.
+    \end{enumerate}
+\end{lemma}
+
+\begin{proof}[Proof (sketch)]
+    Consider the $i$-th single chain $\chain = \parallelChains_i$ of a party \party.
+    %
+    There exist parameterizations such that at the end of round $\ell$, with constant probability $p > (m - \eta) / m$, $\chainPrefixUB{\chain}{\ell - k}$ yields a common view with any other honest party and includes a majority of honest input blocks.
+    %
+    Proving the above claim is mainly a reminiscence of the proof of~\cite[Theorem 2]{EC:GarKiaShe24}, with additionally extending it to the bounded-delay network (see, e.g., \cite[Section 7]{EPRINT:GarKiaLeo14}, for more details).
+
+    Since any two single chains are mutually independent from each other, the probability that these two % good 
+    properties hold on more than $p \cdot m  > m - \eta$ chains can be computed by the Chernoff bound (\cref{thm:chernoff-bounds}), with error probability negligibly small in the security parameter $\kappa$ (recall that $m = \polylog \kappa$).
+\end{proof}
+
+Given that the `good' properties hold on a sufficiently large subset of the values in the output decision array, we conclude that \cref{protocol:approximate-consensus} solves the Approximate Agreement problem with an arbitrarily small $\epsilon$.
+
+\begin{theorem} \label{thm:honest-majority-approx-agreement}
+    There exist protocol parameterizations such that \cref{protocol:approximate-consensus} is an $\epsilon$-secure Approximate Agreement protocol, for an arbitrarily small $\epsilon > 0$, against an adversary that controls less than half of the computational power, and all honest parties terminate at the end of round $\ell$, except with probability negligible in $\kappa$.
+\end{theorem}
+
+\begin{proof}
+    Let $\eta = [\epsilon/(1 + 2\epsilon)]m$ and consider the arrays of size $m$ held by honest parties at the end of the execution.
+    %
+    Due to~\cref{lemma:apa}, there exist protocol parameterizations such that all honest parties share a common subset of at least size $m - \eta$, and since the output is picked as the median among a set with a majority of honest messages, all values in this subset stay in the convex hull of the input.
+    %
+    By following a similar argument as that in~\cref{lemma:one-third-apa}, it holds that for any (possibly the same) $\party_1, \ldots, \party_k \in \honestPartySet$,
+    %
+    \[ \min V \le \mathbf{V}^{\party_1}_{\eta + 1} \le \mathbf{V}^{\party_2}_{2\eta + 1} \le \ldots \le  \mathbf{V}^{\party_k}_{m - \eta} \le \max V. \]
+    %
+    Validity follows directly, and since all parties pick $1/\epsilon$ values after the $\mathsf{select}$ operation (\cref{eq:reduce-select}), the output quality is $\epsilon$.
+\end{proof}
