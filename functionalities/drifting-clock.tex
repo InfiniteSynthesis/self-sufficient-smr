@@ -1,0 +1,68 @@
+\begin{cccFunctionality}
+    {\funcDriftingClock}
+    {drifting-clock}
+    {The drifting global clock.}
+
+    This functionality maintains state variables as follows.
+
+    \addtocounter{table}{-1}
+    \begin{tabularx}{.9\textwidth}{c X}
+        \toprule[.3mm]
+        \textbf{State Variable}
+         & \textbf{Description}
+        \\ \midrule[.3mm]
+        $\clockDrift \gets 0$
+         & The bound on clock drifts.
+        \\ \midrule
+        $\partyset \gets \emptyset$
+         & The set of registered parties $\party = (\pid, \sid)$.
+        \\ \midrule
+        $F \gets \emptyset$
+         & The set of registered functionalities (together with their session identifier).
+        \\ \midrule
+        $\tau_\sid \gets 0$
+         & The nominal-time variable for session \sid.
+        \\ \midrule
+        $d_\party \gets 0$
+         & The clock-update variable for $\party = (\pid, \sid) \in \partyset$.  $d_\party$ is set to $1$ after \party finishes a round.
+        \\ \midrule
+        $b_\party \gets 1$
+         & The tick-budget variable for $\party = (\pid, \sid) \in \partyset$.
+        \\ \midrule
+        $d(\F, \sid) \gets 0$
+         & The clock-update variable for $(\F, \sid) \in F$.
+        \\ \bottomrule[.3mm]
+    \end{tabularx}
+
+    \paragraph{Setting the drift:}
+    %
+    \begin{cccItemize}[nosep]
+        \item Upon  receiving $(\textsc{set-drift}, \sid, r)$ from the adversary \adv, \textbf{if} \textsc{set-drift} has never been received then set $\clockDrift = r$. Return $(\textsc{set-drift}, \sid, \ok)$ to \adv.
+    \end{cccItemize}
+
+    \paragraph{Clock capabilities:}
+    %
+    \begin{cccItemize}[nosep]
+        \item Upon receiving $(\textsc{clock-update}, \sid_C)$ from some party $\party \in \partyset$ set $d_\party \gets 1$ and $b_\party \gets b_\party - 1$; execute \textit{Time-Update} and forward $(\textsc{clock-update}, \sid_C , \party)$ to \adv.
+
+        \item Upon receiving $(\textsc{clock-update}, \sid_C)$ from some functionality \F in a session \sid such that $(\F, \sid) \in F$ set $d(\F, \sid) \gets 1$, execute \emph{Time-Update} and return $(\textsc{clock-update},\allowbreak \sid_C, \F)$ to this instance of \F.
+
+        \item Upon receiving $(\textsc{clock-forward}, \sid_C , \party)$ from \adv where $\party \in \partyset$, if $d_\party = 0$ or it is about to violate the \clockDrift-bounded linear envelope on \party, ignore the message.
+        %
+        Otherwise, update $d_\party = 0$ and $b_\party \gets b_\party + 1$; return $(\textsc{clock-forward-ok}, \sid_C , \party)$ to \adv.
+
+        \item Upon receiving $(\textsc{clock-backward}, \sid_C , \party)$ from \adv where $\party \in \partyset$, if $d_\party = 0$ or it is about to violate the \clockDrift-bounded linear envelope on \party, ignore the message.
+        %
+        Otherwise, update $b_\party \gets b_\party - 1$; return $(\textsc{clock-backward-ok}, \sid_C , \party)$ to \adv.
+
+        \item Upon receiving $(\textsc{clock-tick}, \sid_C)$ from any participant \party --- including the environment on behalf of a party --- or the adversary on behalf of a corrupted party \party (resp. from any ideal---shared or local---functionality \F), execute procedure \textit{Time-Update}, return $(\textsc{clock-tick}, \sid_C, d_{\party})$ (resp. $(\textsc{clock-tick}, \sid_C, d_{(\F, \sid)})$) to the requestor (where \sid is the session id of the calling instance).
+
+        \item Upon receiving $(\textsc{clock-read}, \sid_C)$ from the adversary or the wapper functionalities, return $(\textsc{clock-read},\sid_C, \tau_{\sid})$ to the requestor (where \sid is the session id of the calling instance).
+    \end{cccItemize}
+
+    \medskip\emph{Procedure Time-Update:}
+    %
+    For each session \sid do: If (i) $d_{(\func, \sid)} = 1$ for all $\func \in F$, and (ii) $d_\party = 1$ and $b_\party \le 0$ for all honest parties $\party = (\cdot, \sid) \in \partyset$, then update $\tau_\sid \gets \tau_\sid + 1$, $d_{(\func,\sid)} \gets 0$ and $b_\party \gets b_\party + 1$ for all parties $\party = (\cdot, \sid) \in \partyset$.
+    %
+    Additionally, for all parties $\party = (\cdot, \sid) \in \partyset$ with $b_\party > 0$, update $d_\party \gets 0$.
+\end{cccFunctionality}

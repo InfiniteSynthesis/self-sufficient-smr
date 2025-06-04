@@ -1,0 +1,17 @@
+\begin{cccFunctionality}
+    {\funcCRS}
+    {CRS}
+    {The common reference string.}
+
+    The functionality is parameterized by a distribution $\mathcal{D}$.
+
+    \begin{cccItemize}[noitemsep]
+        \item \textbf{Retrieve.} Upon receiving $(\textsc{Retrieve}, \sid)$ from some party \party (or from \adv on behalf of a corrupted \party), do the following:
+        %
+        \begin{cccEnum}[nosep]
+            \item If activated for the first time, choose a value $d \gets \mathcal{D}$, and send $(\textsc{Retrieved}, \sid)$ to \wrapper{\funcRO} and \wrapper{\funcDiffuse}.
+
+            \item Return $(\textsc{Retrieve}, d)$ to \party.
+        \end{cccEnum}
+    \end{cccItemize}
+\end{cccFunctionality}

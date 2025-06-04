@@ -1,0 +1,15 @@
+\section{Preliminaries}
+\label{sec:preliminaries}
+
+We adopt Canetti's formulation of ``real world'' notion of protocol execution \cite{JC:Canetti00,EPRINT:Canetti00} to model the computation for multi-party protocols.
+%
+The environment \Z provides input to parties that execute the protocol $\Pi$.
+%
+The adversary \adv is a single entity that controls all corrupted parties; and \adv is both ``adaptive'' (i.e., take control of parties on the fly) and ``rushing'' (i.e., \adv can observe honest parties' actions and then react).
+%
+We describe the ``resources'' that may be available to the protocol instances (e.g., access to a ``diffuse'' channel) as \emph{ideal functionalities} in the terminology of~\cite{EPRINT:Canetti00}.
+
+\input{content/preliminaries/drifting-clocks}
+\input{content/preliminaries/random-oracle-diffuse}
+\input{content/preliminaries/blockchain-notations}
+\input{content/preliminaries/weak-approx-agreement}

@@ -1,0 +1,72 @@
+\begin{cccFunctionality}
+    {\wrapper{\funcRO}}
+    {random-oracle-wrapper}
+    {The random oracle wrapper.}
+
+    This functionality maintains state variables as follows.
+
+    \addtocounter{table}{-1}
+    \begin{tabularx}{.9\textwidth}{c  X}
+        \toprule[.3mm]
+        \textbf{State Variable}
+         & \textbf{Description}
+        \\ \midrule[.3mm]
+        $\partyset \gets \emptyset$
+         & The set of registered parties; the current set of corrupted parties is denoted by $\partyset'$.
+        \\ \midrule
+        $\tau \gets 0$
+         & The (real-time) clock tick counter.
+        \\ \midrule
+        $h_\tau$
+         & An upper bound which restricts the \func-evaluations of all alert parties at time $\tau$.
+        \\ \midrule
+        $q_\honestPartySet, q_\adv \gets 0$
+         & The alert/adversary evaluation counter.
+        \\ \bottomrule[.3mm]
+    \end{tabularx}
+
+    \paragraph{Pre-mining attack handling (executed only if $\tau = 0$):}
+    %
+    \begin{cccItemize}[nosep]
+        \item Upon receiving $(\textsc{eval}, \sid, x)$ from \adv on behalf of a corrupted party $P \in \partyset'$, forward the request to \funcRO and return to \adv whatever \funcRO returns.
+
+        \item Upon receiving $(\textsc{Retrieved}, \sid)$ from \funcCRS, set $\tau = 1$.
+    \end{cccItemize}
+
+    \paragraph{Relaying inputs to the random oracle:}
+    %
+    \begin{cccItemize}[nosep]
+        \item Upon receiving $(\textsc{eval}, \sid, x)$ from \adv on behalf of a corrupted party $P \in \partyset'$ or a de-synchronized party \party, first execute \textit{Round Reset}, then do the following.
+        %
+        \begin{cccEnum}[nosep]
+            \item Set $q_\adv \gets q_\adv + 1$.
+            \item \textbf{If} $q_\adv \le h_\tau$ \textbf{then} forward the request to \funcRO and return to \adv whatever \funcRO returns.
+        \end{cccEnum}
+
+        \item Upon receiving $(\textsc{eval}, \sid, x)$ from an alert party \party, first execute \textit{Round Reset}, then do the following.
+        %
+        \begin{cccEnum}[nosep]
+            \item Set $q_\honestPartySet \gets q_\honestPartySet + 1$.
+            \item \textbf{If} $q_\honestPartySet \le h_\tau$ \textbf{then} forward the request to \funcRO and return to \party whatever \funcRO returns.
+            \item \textbf{If} $q_\honestPartySet \ge h_\tau$ \textbf{then} send $(\textsc{clock-update}, \sid_C)$ to \funcDriftingClock.
+        \end{cccEnum}
+    \end{cccItemize}
+
+    \paragraph{Corruption handling:}
+    %
+    \begin{cccItemize}[nosep]
+        \item Upon receiving $(\textsc{corrupt}, \sid, \party)$ from the adversary, set $\partyset' \gets \partyset' \cup \party$.
+    \end{cccItemize}
+
+    \medskip\emph{Procedure Round-Reset:}
+    %
+    Send $(\textsc{clock-read}, \sid_C)$ to \funcDriftingClock and receive $(\textsc{clock-read}, \allowbreak \sid_C, \tau')$ from \funcDriftingClock. If $|\tau - \tau' | > 0$, then do the following.
+    %[
+    \begin{cccEnum}[nosep]
+        \item Set $q_\honestPartySet, q_\adv \gets 0$ and $\tau \gets \tau'$.
+
+        \item Send $(\textsc{next-round})$ to \adv and receive as response $(\textsc{next-round}, h^*_{\tau'})$.
+        %
+        \textbf{If} $(h_1, h_2, \ldots, h'_{\tau'})$ is $(\gamma, s)$-respecting (\cref{def:respecting-environment}) \textbf{then} set $h_{\tau'} = h'_{\tau'}$; \textbf{else} set $h_{\tau'} = h_{\tau' - 1}$.
+    \end{cccEnum}
+\end{cccFunctionality}

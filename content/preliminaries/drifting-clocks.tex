@@ -1,0 +1,63 @@
+\subsection{Drifting Clocks and Clock Synchronization}
+\label{subsec:drifting-clocks-and-synchronization}
+
+We assume the existence of ``nominal time'' (cf.~\cite{EC:BGKRZ21,TCC:GarKiaShe22}, also known as ``real time'' or ``Newtonian time'' \cite{JCSS:DHS86}), which is not directly observable by protocol participants.
+%
+Following the traditional assumption in distributed computing that each party is equipped with a physical clock, whose output is a real-valued function of nominal time, in this paper we consider the \textbf{drifting clock} model.
+%
+Specifically, honest parties possess physical clocks with a bounded rate of drift from nominal time (\cref{fig:drifting-clocks}) --- i.e., an honest physical clock stays within a \emph{linear envelope} of nominal time.\footnote{A function $f: \mathbb{R} \rightarrow \mathbb{R}$ is within a $(U, L)$-linear envelope if and only if it holds that $L \cdot x - c \leq f(x)\leq U \cdot x + c$, where $c$ is a constant and $x \in \mathbb{R}^+$.}
+%
+We use \clockDrift to denote the bound on the rate of honest physical clocks.
+% 
+Formally, for any nominal time $u > v$ and an honest physical clock $D$, it holds that
+%
+\[ (1 + \clockDrift)^{-1} (u - v) \le D(u) - D(v) \le (1 + \clockDrift) (u - v). \]
+
+\input{figures/drifting-clocks}
+
+Note that time in the drifting clock model are real values, while our protocol execution model divides time into discrete integer-numbered steps.
+%
+In order to ``insert'' real-valued time into this structure, we model drifting local clocks as \funcDriftingClock, derived from the global clock functionality in~\cite{TCC:KMTZ13}.
+%
+In \funcDriftingClock, nominal time is defined by the number of times that the clock functionality moves forward the time-step variable $\tau$ (which is an internal variable and is unknown to the parties).
+%
+Instead of directly receiving the time from \funcDriftingClock, parties receive ``ticks'' from \funcDriftingClock which indicates that they should advance their local round number.
+%
+\funcDriftingClock advances the nominal time when all (honest) participants claim they have finished their computation in the current round.
+%
+Additionally, \funcDriftingClock allows the adversary to ``push'' or ``stall'' honest clocks, as long as these operations do not violate the \clockDrift-bounded linear envelope assumption.
+%
+We present \funcDriftingClock in~\cref{functionality:drifting-clock}.
+
+\begin{remark}
+    As opposed to the classical distributed computing setting (cf.~\cite{JACM:DwoLynSto88}) where rounds/time steps are defined as intervals of equal length in the view of an external real-time clock, in our model \funcDriftingClock does not guarantee that rounds/time steps are of equal duration.
+    %
+    In fact, the notions of `time' and `duration' are not defined in the UC setting.
+    %
+    Yet, our model shows the same effect in restricting local clock counters staying in a bounded linear envelope with respect to the nominal clock counter; moreover, the same amount of computation is carried out per local time counter increment --- which means that in the same window of nominal time, a faster CPU will solve more PoWs than a slower one.
+\end{remark}
+
+\input{functionalities/drifting-clock}
+
+We adapt the traditional definition of the clock synchronization problem (cf.~\cite{JCSS:DHS86,JACM:SriTou87}) to our permissionless setting.
+%
+In~\cref{def:clock-properties}, we consider two properties, \emph{bounded skew} and \emph{accuracy}, that establish upper bounds \maxSkew and $\varGamma$ on honest clock skew and their deviation from the nominal time, respectively.
+
+\begin{definition}
+    [Clock Synchronization]
+    \label{def:clock-properties}
+    There exist constants $\maxSkew \in \mathbb{N}$, $\varGamma \in \mathbb{R}^+$ such that honest parties' logical clocks satisfy the following two properties:
+    %
+    \begin{cccItemize}[nosep]
+        \item \emph{\bf Bounded skew (with parameter $\maxSkew \in \mathbb{N}$).}
+        %
+        Let $\round_1, \round_2$ be the reported logical clocks of two
+        honest parties at any nominal time $r$.
+        %
+        Then $|\round_ 1 - \round_2| \le \maxSkew$.
+
+        \item \emph{\bf Accuracy (with parameter $\varGamma \in \mathbb{R}^+$).}
+        %
+        Each honest party's logical clock stays in a $(U, L)$-linear envelope with respect to the nominal time $r$, where $U = 1 + \varGamma$ and $L = 1 / (1 + \varGamma)$.
+    \end{cccItemize}
+\end{definition}

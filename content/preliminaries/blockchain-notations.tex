@@ -1,0 +1,37 @@
+\subsection{Blockchain Notation}
+
+A block with target $T \in \mathbb{N}$ is a quadruple of the form $\block = \langle ctr, r, h, x \rangle$ where $ctr, r \in \mathbb{N}$, $h \in \{0, 1\}^{\kappa}$ and $x \in \{0, 1\}^*$.
+%
+A blockchain \chain is a (possibly empty) sequence of blocks; the rightmost block is denoted by \chainHead{\chain} (note $\chainHead{\varepsilon} = \varepsilon$).
+%
+These blocks are chained in the sense that if $\block_{i + 1} = \langle ctr, r, h, x \rangle$, then $h = H(\block_i)$.
+%
+We use \timestamp{\block} to denote the \emph{timestamp} of \block.
+%
+We denote by \chainPrefixUB{\chain}{t} the chain resulting from ``pruning'' the least number of rightmost blocks so that all block timestamps are less than $t$.
+%
+Let $\parallelChains = \langle \chain_1, \chain_2, \ldots, \chain_m \rangle$ denote $m$ \emph{parallel} chains and $\parallelChains_j$ the $j$-th chain $\chain_j$ in \parallelChains.
+
+Next, we introduce some basic string notation, which will be useful when describing our multi-chain-oriented PoW mechanism.
+%
+For a $\kappa$-bit string $s$, where $\kappa$ is the security parameter, we will use $s_i~(i \in [m])$ to denote the $i$-th bit of $s$, \stringSegment{s}{i}{m} to denote the $i$-th segment after $s$ is equally divided into $m$ segments---i.e., $\stringSegment{s}{i}{m} = s_{[(i - 1) * \kappa / m ]+ 1}, \ldots, s_{i * \kappa / m}$.
+%
+Further, we will write \stringRev{s} as the reverse of string $s$ (i.e., the string obtained by reversing the order of its bits), and use \stringSegmentRev{s}{i}{m} to denote the reverse of the $i$-th segment.
+
+Finally, we introduce some array operations, following the notation in~\cite{JACM:DLPSW86}, that will be useful when describing the protocol.
+%
+Let $\mathbf{V} = (v_1, \ldots, v_n)$ be a real array of $n$ elements and denote $\tilde{\mathbf{V}} = (\tilde{v}_1, \ldots, \tilde{v}_n)$ the array after ordering $\mathbf{V}$ non-decreasingly.
+%
+We define the operations \textsf{reduce} and \textsf{select}.
+%
+Intuitively, \textsf{reduce} with parameter $\mathbf{V}$ and $\eta$ first orders $\mathbf{V}$ non-decreasingly and then ``trims'' the $\eta$ largest and $\eta$ smallest elements in $\tilde{\mathbf{V}}$; \textsf{select} with parameter $\mathbf{V}$ and $\eta$ first orders $\mathbf{V}$ non-decreasingly and then selects every first element of $\eta$ consecutive elements and forms them as a new array.
+%
+Formally,
+%
+\begin{equation} \label{eq:reduce-select}
+    \mathsf{reduce}(\mathbf{V}, \eta) = (\tilde{v}_{\eta + 1}, \ldots, \tilde{v}_{n - \eta})
+    ~~\text{and}~~
+    \mathsf{select}(\mathbf{V}, \eta) = (\tilde{v}_1, \tilde{v}_{\eta + 1}, \tilde{v}_{2\eta + 1}, \ldots).
+\end{equation}
+%
+Additionally, for an array $\mathbf{V}$, let $\mathsf{avg}(\mathbf{V})$ denote the average of its elements, and $\med(\mathbf{V})$ denote the median.

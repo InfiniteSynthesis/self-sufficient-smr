@@ -1,0 +1,29 @@
+\begin{cccFunctionality}{\funcRO}
+    {random-oracle}
+    {The random oracle.}
+
+    The functionality is parameterized by a security parameter $\kappa$.
+
+    \addtocounter{table}{-1}
+    \begin{tabularx}{.9\textwidth}{c  X}
+        \toprule[.3mm]
+        \textbf{State Variable}
+         & \textbf{Description}
+        \\ \midrule[.3mm]
+        $\partyset \gets \emptyset$
+         & The set of registered parties.
+        \\ \midrule
+        $H \gets \emptyset$
+         & A dynamically updatable function table where $H[x] = \bot$ denotes the fact that no pair of the form $(x, \cdot)$ is in $H$.
+        \\ \bottomrule[.3mm]
+    \end{tabularx}
+
+    \begin{cccItemize}[noitemsep]
+        \item \textbf{Eval.} Upon receiving $(\textsc{eval}, \sid, x)$ from some party $\party \in \partyset$ (or from \adv on behalf of a corrupted \party), do the following:
+        %
+        \begin{cccEnum}[nosep]
+            \item If $H[x] = \bot$ sample a value $y$ uniformly at random from $\{0, 1\}^\kappa$ and set $H[x] \gets y$.
+            \item Return $(\textsc{eval}, \sid, x, H[x])$ to the requestor.
+        \end{cccEnum}
+    \end{cccItemize}
+\end{cccFunctionality}

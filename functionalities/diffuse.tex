@@ -1,0 +1,79 @@
+\begin{cccFunctionality}
+      {\funcDiffuse}
+      {diffuse}
+      {The diffusion network.}
+
+      \newcommand*{\msgid}{\ensuremath{\mathsf{mid}}\xspace}
+      \newcommand*{\vecM}{\ensuremath{\vec{M}}\xspace}
+
+      This functionality maintains state variables as follows.
+
+      \begin{minipage}{\linewidth}
+            \addtocounter{table}{-1}
+            \begin{tabularx}{.9\textwidth}{c  X}
+                  \toprule[.3mm]
+                  \textbf{State Variable}
+                   & \textbf{Description}
+                  \\ \midrule[.3mm]
+                  $\delay \gets 0$
+                   & The maximum network latency.
+                  \\ \midrule
+                  $\partyset \gets \emptyset$
+                   & The set of registered parties.
+                  \\ \midrule
+                  $\vecM \gets [] $
+                   & A dynamically updatable list of quadruples $(m, \msgid, D_{\msgid}, \party)$ where $D_{\msgid}$ denotes the fetch counter.
+                  \\ \bottomrule[.3mm]
+            \end{tabularx}
+      \end{minipage}
+
+      \medskip
+      \paragraph{Setting the delay:}
+      %
+      \begin{cccItemize}[nosep]
+            \item Upon  receiving $(\textsc{set-delay}, \sid, d)$ from the adversary \adv, \textbf{if} \textsc{set-delay} has never been received \textbf{then} set $\delay = d$. Return $(\textsc{set-delay}, \sid, \ok)$ to \adv.
+      \end{cccItemize}
+
+      \paragraph{Network capabilities:}
+      %
+      \begin{cccItemize}[nosep]
+            \item Upon receiving $(\textsc{diffuse}, \sid, m)$ from some
+            $\party_s \in \partyset$, where $\partyset = \{ \party_1, \ldots, \party_n \}$ denotes the current party set, do:
+            %
+            \begin{cccEnum}[nosep]
+                  \item Choose $n$ new unique message-IDs $\msgid_1, \ldots, \msgid_n$.
+                  \item Initialize $2n$ new variables $D_{\msgid_1} := D^{MAX}_{\msgid_1} \ldots := D_{\msgid_n} := D^{MAX}_{\msgid_n} := 1$ and a per message-delay $\delay_{\msgid_i} = \delay$ for $i \in [n]$.
+                  \item Set  $\vecM := \vecM \concat (m, \msgid_1, D_{\msgid_1}, \party_1) \concat \ldots \concat (m, \msgid_n, D_{\msgid_n}, \party_n)$.
+                  \item Send $(\textsc{diffuse}, \sid, m, \party_s, (\party_1, \msgid_1), \ldots ,(\party_n, \msgid_n))$ to the adversary.
+            \end{cccEnum}
+
+            \item Upon receiving $(\textsc{fetch}, \sid)$ from $\party \in \partyset$, or from \adv on behalf of a corrupted party \party:
+            %
+            \begin{cccEnum}[nosep]
+                  \item For all tuples $(m, \msgid, D_\msgid, \party) \in \vecM$, set $D_\msgid := D_\msgid - 1$.
+                  \item Let $\vecM^\party_0$ denote the subvector \vecM including all tuples of the form $(m, \msgid, D_\msgid, \party)$ with $D_\msgid \le 0$ (in the same order as they appear in \vecM).
+                  %
+                  Delete all entries in $\vecM^\party_0$ from \vecM and in case some $(m, \msgid, D_\msgid, \party)$ is in
+                  $\vecM^\party_0$, where \party is honest, set $\delay_{\msgid'} = \delay$ for any $(m, \msgid', D_{\msgid'}, (\cdot, \sid))$ in \vecM and replace this record by $(m, \msgid', \min \{ D_{\msgid'}, \delay \}, \party')$.
+                  \item Output $\vecM^\party_0$ to \party (if \party is corrupted, send $\vecM^\party_0$ to \adv).
+            \end{cccEnum}
+      \end{cccItemize}
+
+      \paragraph{Additional adversarial capabilities:}
+      %
+      \begin{cccItemize}[nosep]
+            \item Upon receiving $(\textsc{diffuse}, \sid, m)$ from some corrupted $\party_s \in \partyset$ (or from \adv on behalf of $\party_s$ if corrupted),
+            % do 
+            execute it the same way as an honest-sender diffuse, with the only difference that $\delay_{\msgid_i} = \infty$.
+
+            \item Upon receiving $(\textsc{delays}, \sid, (T_{\msgid_{i_1}}, \msgid_{i_1}), \ldots, (T_{\msgid_{i_\ell}}, \msgid_{i_\ell}))$ from the adversary do the following for each pair $(T_{\msgid_{i_j}}, \msgid_{i_j})$:
+            %
+            if $D^{MAX}_{\msgid_{i_j}} + T_{\msgid_{i_j}} \le \delay_{\msgid_{i_j}}$ and $\msgid_{i_j}$ is a message-ID of receiver $\party = (\cdot, \sid)$ registered in the current \vecM, set $D_{\msgid_{i_j}} := D_{\msgid_{i_j}} + T_{\msgid_{i_j}}$ and set $D^{MAX}_{\msgid_{i_j}} := D^{MAX}_{\msgid_{i_j}} + T_{\msgid_{i_j}}$; otherwise, ignore this pair.
+
+            \item Upon receiving $(\textsc{swap}, \sid, \msgid, \msgid')$ from the adversary, if \msgid and $\msgid'$ are message-IDs registered in the current \vecM, then swap the triples $(m, \msgid, D_\msgid, (\cdot, \sid))$ and $(m, \msgid', D_{\msgid'}, (\cdot, \sid))$ in \vecM.
+            %
+            Return $(\textsc{swap}, \sid)$ to the adversary.
+
+            \item Upon receiving $(\textsc{get-reg}, \sid)$ from \adv, return the response $(\textsc{get-reg}, \sid, \partyset)$ to \adv.
+      \end{cccItemize}
+\end{cccFunctionality}

@@ -1,0 +1,48 @@
+\subsection{Weak/Approximate Agreement}
+\label{subsec:weak-approximate-agreement}
+
+\paragraph{Weak agreement.}
+%
+A variant of Byzantine agreement --- \emph{Weak Agreement} -- relaxes the agreement property to allow some parties to output a special failing symbol $\bot$ while requiring all non-$\bot$ outputs being consistent \cite{JoA:Dolev82}.
+%
+This simple primitive has been widely used in building stronger notion of agreement (e.g., graded agreement).
+%
+We here provide the definition of Weak Agreement.
+
+\begin{definition}
+    [Weak Agreement]
+    \label{def:weak-agreement}
+    A protocol $\Pi$ implements Weak Agreement provided it satisfies the following two properties:
+    %
+    \begin{cccItemize}[nosep]
+        \item \emph{\textbf{Weak Agreement}}: There exists $y \in \{0, 1\}$ such that all honest parties output $y_i \in \{ y, \bot \}$.
+
+        \item \emph{\textbf{Validity}}: If all honest parties have the same input $b \in \{0, 1\}$, they all output $y_i = b$.
+    \end{cccItemize}
+\end{definition}
+
+\paragraph{Approximate agreement.}
+%
+\emph{Approximate Agreement} (AA), formulated in~\cite{JACM:DLPSW86}, is a variant of the Byzantine agreement problem~\cite{JACM:PeaShoLam80,TOPLAS:LamShoPea82} in which processes start with arbitrary real values rather than Boolean values or values from some bounded range, and in which approximate, rather than exact, agreement is the desired goal.
+%
+In the classical distributed computing literature, AA has served as a fundamental building block to achieve clock synchronization (see, e.g.,~\cite{PODC:LunLyn84,PODC:MahSch85,PODC:LenLos22}).
+
+Next, we present a definition of AA which captures adaptive security.
+%
+Conventionally, the goal is to let honest parties agree on outputs where the difference between any two of them is upper-bounded by a constant.
+%
+In this paper, we provide an alternate yet equivalent definition which asks for a ``concentration'' on the outputs compared with the inputs.
+%
+We denote $\epsilon$ as the ``quality'' of the agreement---i.e., the ratio between honest-input distance and output distance.
+
+\begin{definition}
+    [Approximate Agreement]
+    \label{def:approximate-agreement}
+    A protocol $\Pi$ is an $\epsilon$-secure protocol for Approximate Agreement provided it satisfies the following two properties:
+    %
+    \begin{cccItemize}[nosep]
+        \item \emph{\textbf{$\epsilon$-Agreement}}: There is a round after which (i) any two honest parties hold inputs with difference at most $\ell$, and (ii) any two honest parties return outputs with difference at most $\epsilon \cdot \ell$ (where $0 < \epsilon < 1$) if queried by the environment.
+
+        \item \emph{\textbf{Validity}}: The output returned by an honest party \party falls in the convex hull of the inputs of all parties at round $1$ that are honest at the round \party's output is produced.
+    \end{cccItemize}
+\end{definition}

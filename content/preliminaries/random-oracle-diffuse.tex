@@ -1,0 +1,78 @@
+\subsection{Random Oracle, Network and Adversarial Model}
+\label{subsec:ro-network-corruption}
+
+\paragraph{Random oracle.}
+%
+By convention, we model the cryptographic hash function $H$ with output in $\{0, 1\}^\kappa$ (which is used to generate proofs of work [PoWs]) as a random oracle \funcRO~\cite{CCS:BelRog93}.
+
+\input{functionalities/random-oracle}
+
+We express our honest majority condition in terms of computational power, measured in particular by the number of queries to the RO that the parties are allowed to make per \emph{nominal time-step}, as opposed to expressing it by the number of parties (i.e., the ``flat'' model where parties are assumed to have equal computational power---cf.~\cite{EC:GarKiaLeo15}).
+
+\begin{definition}[Honest Majority]
+    Let $h_r, t_r$ denote the number of \emph{alert} and \emph{non-alert} random oracle queries at \emph{nominal} time $r$, respectively.
+    %
+    Then, for all $r \in \mathbb{N}$, it holds that $h_r > t_r$.
+\end{definition}
+
+This restriction on the number of RO queries is captured by a wrapper functionality on \funcRO via counting the number of \emph{alert} and other queries (see below) per nominal-time step.
+%
+The adversary is allowed to dynamically and adaptively determine the number of alert random oracle queries per nominal-time step, as long as it does not violate the restrictions imposed by the $(\gamma, s)$-respecting environment (see~\cref{def:respecting-environment} in the sequel).
+
+\input{functionalities/wrapper-random-oracle}
+
+In addition, pre-mining attack prevention is captured by restricting the number of adversarial queries after a fresh CRS is released (which we model as \funcCRS).
+
+\input{functionalities/crs}
+
+\paragraph{The bounded-delay network.}
+%
+Regarding communication amongst parties, we consider a peer-to-peer diffusion network, where the message dissemination has an (unknown) \delay-bounded delay.
+%
+In more detail, an honest message sent at time $t$ will be received by all other honest parties before time $t + \delay$; regarding messages sent by the adversary, if $t$ is the earliest time such that at least one honest party receives those messages, they are guaranteed to be delivered to all honest parties before time $t + \delay$ (i.e., honest parties keep ``echoing'' messages).
+
+We capture this communication network with \funcDiffuse (\cref{functionality:diffuse}).
+%
+Recall that existing diffuse functionalities (cf.~\cite{C:BMTZ17}) model delays in the following manner:
+%
+There is a fetch counter per message per recipient such that when each time an honest party \party is activated and received a new tick from the clock, \party fetches on \funcDiffuse which reduces counters by $1$ for all messages delivering to \party; she then receives a subset of those messages with counters reset to $0$.
+%
+Regarding the adversary, he can increase the counter for each message and recipient for up to \delay in accumulation (as well as swapping the order of messages).
+
+By convention, different types of messages are diffused by different functionalities, and we write $\funcDiffuse^{\textsf{bc}}$, $\funcDiffuse^{\textsf{input}}$, $\funcDiffuse^{\textsf{tx}}$ to denote the network for chains, input blocks and transactions.
+
+\input{functionalities/diffuse}
+
+We highlight that such mechanism does \emph{not} work in our drifting clock model with \funcDriftingClock (it only works with a global clock where parties proceed with the same speed).
+%
+This is because, when modeling delays via fetches on the diffuse functionality, honest parties that experience relatively fast local rounds would request more \textsc{fetch} commands than the slow ones in the same window of nominal time --- i.e., if an honestly-sent message is set the same delay for two parties then it delivers to the fast one earlier; yet our goal is to model delays measured in the perspective of the nominal time (regardless of parties' local understanding of time).
+
+We resolve this issue by introducing a new wrapper on \funcDiffuse (\cref{functionality:wrapper-diffuse}) that restricts the adversary's capability to delay messages for up to \delay nominal time.
+%
+After registering on \funcDriftingClock to learn the nominal time ticks, the wrapper functionality dynamically relays parties' \textsc{fetch} request to \funcDiffuse so that in every nominal-time step, exactly one fetch operation is relayed to \funcDiffuse for each honest party (even if that honest party receives multiple ticks from \funcDriftingClock).
+%
+Meanwhile, for each party \party that proceeds slowly and may not activate in a given nominal time, the wrapper queries \funcDiffuse on behalf of \party, buffers the response messages and delivers them to \party upon the next time \party interacts with the wrapper.
+
+\input{functionalities/wrapper-diffuse}
+
+\paragraph{Dynamic availability and respecting environment.}
+%
+In order to apply a more fine-grained classification on protocol participants, we follow the treatment in~\cite{CCS:BGKRZ18} and classify parties into different types based on their accessible resources and synchronization states.
+%
+Specifically, a party is (i) \emph{operational} if she is registered with the random oracle \funcRO, and \emph{stalled} otherwise; (ii) \emph{online} if she is registered with the network \funcDiffuse, and \emph{offline} otherwise; (iii) \emph{time-aware} if she is registered with the drifting clock \funcDriftingClock, and \emph{time-unaware} otherwise; and (iv) \emph{synchronized} if she has been participated in the protocol for sufficiently long time and held ``synchronized state'' and ``synchronized time'' with other synchronized parties, and \emph{desynchronized} otherwise.
+
+We define \emph{alert} parties based on the classification above.
+%
+Specifically, alert parties are those who have access to all the resources and are synchronized.
+%
+They are the core set of parties to carry out the protocol.
+
+Next, we define a ``respecting environment'' in terms of the computational power (cf.~\cite{TCC:GarKiaShe22}) as opposed to number of parties (cf.~\cite{C:GarKiaLeo17,EPRINT:GarKiaLeo20}).
+%
+Our honest-majority assumption is that during the whole protocol execution, the alert computational power is higher than the adversarial one.
+%
+We restrict the environment so that the number of such queries will be bounded in a certain fashion.
+
+\begin{definition} \label{def:respecting-environment}
+    For $\gamma \in \mathbb{R}^+$ we call the sequence $(h_r)_{r \in [0, B)}$, where $B \in \mathbb{N}$, $(\gamma, s)$-respecting if for any set $S \subseteq [0, B)$ of at most $s$ consecutive integers, $\max_{r \in S} h_r \le \gamma \cdot \min_{r \in S} h_r$.
+\end{definition}

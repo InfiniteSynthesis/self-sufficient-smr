@@ -1,0 +1,64 @@
+\begin{cccFunctionality}
+    {\wrapper{\funcDiffuse}}
+    {wrapper-diffuse}
+    {The wrapper of diffuse network.}
+
+    This functionality maintains state variables as follows.
+
+    \addtocounter{table}{-1}
+    \begin{tabularx}{.9\textwidth}{c  X}
+        \toprule[.3mm]
+        \textbf{State Variable}
+         & \textbf{Description}
+        \\ \midrule[.3mm]
+        $\partyset \gets \emptyset$
+         & The set of registered parties; the current set of corrupted parties is denoted by $\partyset'$.
+        \\ \midrule
+        $\tau \gets 0$
+         & The (real-time) clock tick counter.
+        \\ \midrule
+        $\mathsf{fetch}(\party, \tau) \gets 0$
+         & The fetch variable for party \party at nominal time $\tau$.
+        \\ \midrule
+        $\mathsf{buffer}_\party \gets []$
+         & The fetch buffer for party \party.
+        \\ \bottomrule[.3mm]
+    \end{tabularx}
+
+    \paragraph{Relaying inputs to the diffuse network:}
+    %
+    \begin{cccItemize}[nosep]
+        \item Upon receiving $(\textsc{diffuse}, \sid, m)$ from \adv on behalf of some corrupted $\party \in \partyset'$, parse $m$ as blocks $\block_1, \ldots, \block_n$.
+        %
+        For each $\block_i$, if $\block_i$ has not been queried to \funcRO, send $(\textsc{eval}, \sid, \block_i)$ from a corrupted party.
+
+        \item Upon receiving $(\textsc{fetch}, \sid)$ from an honest party \party, if $\mathsf{fetch}(\party, \tau) = 1$ ignore this request.
+        %
+        Otherwise, execute the following:
+        %
+        \begin{cccEnum}[nosep]
+            \item Forward $(\textsc{fetch}, \sid)$ to \funcDiffuse and recevie as response $\vec{M}$, return $\mathsf{buffer}_\party \concat \vec{M}$.
+            \item Set $\mathsf{buffer}_\party \gets []$ and $\mathsf{fetch}(\party, \tau) \gets 1$.
+        \end{cccEnum}
+    \end{cccItemize}
+
+    \paragraph{Corruption handling:}
+    %
+    \begin{cccItemize}[nosep]
+        \item Upon receiving $(\textsc{corrupt}, \sid, \party)$ from the adversary, set $\partyset' \gets \partyset' \cup \party$.
+    \end{cccItemize}
+
+    \medskip\emph{Procedure Round-Reset:}
+    %
+    Send $(\textsc{clock-read}, \sid_C)$ to \funcDriftingClock and receive $(\textsc{clock-read}, \allowbreak \sid_C, \tau')$ from \funcDriftingClock. If $|\tau - \tau' | > 0$, then do the following.
+    %[
+    \begin{cccEnum}[nosep]
+        \item Set $\tau \gets \tau'$.
+
+        \item  For each honest party $\party$ such that $\mathsf{fetch}(\party, \tau) = 0$, send $(\textsc{fetch}, \sid)$ to \funcDiffuse from \party and recevie as response $\vec{M}$, set $\mathsf{buffer}_\party \gets \mathsf{buffer}_\party \concat \vec{M}$.
+        %
+        For each honest party $\party$ such that $\mathsf{fetch}(\party, \tau) = 1$, set $\mathsf{fetch}(\party, \tau) \gets 0$.
+
+        \item Send $(\textsc{clock-update}, \sid_C)$ to \funcDriftingClock.
+    \end{cccEnum}
+\end{cccFunctionality}
