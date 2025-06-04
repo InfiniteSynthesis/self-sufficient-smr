@@ -1,0 +1,187 @@
+\section{Technical Overview}
+\label{sec:technical-overview}
+
+Our protocol, which we term \pSMR, divides time (in parties' local views) into consecutive, non-overlapping ``intervals.''
+%
+At the end of each interval, based on their local view of their state parties update their internal ledger state and re-synchronize their clocks.
+
+\paragraph{A new parallel blockchain construction.}
+%
+We propose a novel blockchain construction that utilizes parallel blockchains and preserves the optimal corruption resilience threshold while accommodating dynamic participation.
+%
+We highlight the key sub-components of our new construction.
+
+First, parallel chains are extended independently and continuously --- for each chain, parties always select and work on the ``longest'' (in fact, ``heaviest'' in terms of accumulated difficulty) chain; however, all forks are maintained for future potential use, i.e., our parallel blockchains are in fact parallel \emph{blocktrees}.
+%
+The mining procedures of the parallel blocktrees are bound together using \mforone PoW, where one random oracle query may yield multiple valid blocks on different chains yet all sub-procedures are mutually independent.
+
+Second, we introduce a new timestamping scheme where each timestamp consists of a pair of interval and round indices.
+%
+Contrary to previous abstractions of blockchain protocols that ask for monotonically increasing timestamps on a single chain, our new scheme allows parties to insert timestamps where monotonicity is only enforced on the interval index, while round indices are allowed to also decrease.
+%
+In terms of incoming blocks, parties defer their processing when they report timestamps that either in rounds or intervals are in the future, based on the local clock.
+
+Third, we introduce a state retrieval mechanism whereby parties joining the protocol execution can learn all the forks that used to be the longest chain at the end of any previous interval (and remain in the common view of honest participants that are online at the time the new party joins).
+%
+This applies to all past chains that are now orphaned.
+%
+To accommodate this retrieval mechanism, our protocol asks parties to include their local views of the previous interval into the blocks they are mining as input blocks for the next interval.
+%
+If it happens that on sufficiently many parallel chains, the majority of the input blocks report the same block hash, then all these blocks are retrieved, even if they are on orphaned chains that no party is extending any more.
+%
+It is worth pointing out that this retrieval mechanism can be done in a ``trace-back'' manner --- i.e., newly joining parties can first observe the longest $m$ chains in the current interval, and then retrieve the blocktrees of the previous intervals one by one from the latest interval going all the way back to the first interval.
+%
+In this way, the retrieval mechanism provides an oblivious agreement over the common blocktrees at the end of each interval, and we show that this weak type of agreement is sufficient to synchronize parties' internal clocks and states in the bootstrapping procedure for a new client.
+%
+A detailed specification of our new parallel chain construction is presented in~\cref{subsec:new-parallel-blockchain}.
+
+\paragraph{Clock synchronization.}
+%
+In each interval, with some initial skew \initSkew, the honest parties' clocks will deviate from each other as time elapses; to compensate, parties run an \emph{Approximate Agreement} (AA) protocol~\cite{JACM:DLPSW86} in order to maintain their local clocks within the \initSkew skew.
+%
+AA mandates that if all honest parties' inputs belong to a certain range, then the outputs of the parties belong to a more concentrated range (this is a relaxation of the Agreement/Consistency property, since the honest parties do not have to perfectly agree on the output).
+%
+As part of our clock synchronization objective we propose a \emph{permissionless} AA protocol (see \cref{subsec:apa-honst-majority}) that can achieve any constant output concentration as a function of the running time.
+%
+However, na\"ively using an AA protocol is still not sufficient for the goal of clock synchronization.
+%
+To see that, consider parties entering as input to the AA their local timestamps; even if the AA protocol concentrates the output into a single value, due to the fact that there is no simultaneous termination, the parties adjusting their clocks to their output from the AA protocol would not result in a meaningful skew reduction.
+
+To tackle this problem, we take a relative clock correction approach and we run AA on-chain.
+%
+Recall that our mining procedure is performed using \mforone PoWs, and hence all parallel instances are mutually independent.
+%
+We first use ledger agreement to continuously agree on a set of ``sync-messages''  with a certain bounded probability of failure in each chain individually.
+%
+We let these parallel chain invocations terminate in constant time, and hence with constant probability parties will have a common view of the sync-messages on chain, and the majority of these messages will convey information from honest participants' inputs (note that some of the $m$ chains may fail to the extent that they do not convey any useful information or even contain misleading information that the adversary injects).
+%
+Periodically, each party locally computes a clock shift which is the \emph{median} difference between a recorded sync-message on-chain and its corresponding local receiving time at the node.
+%
+In our $m$-way parallel blockchain setting, this will result in $m$ clock shifts.
+%
+Now the nodes perform an AA-style calculation that is reminiscent of the protocol in~\cite{JACM:DLPSW86}:
+%
+First, outliers are eliminated from the clock-shift sequence, then the sequence is split into segments, and finally a representative is selected from each segment by returning the average.
+%
+(The detailed recalculation expression is presented in~\cref{eq:sync-shift} in~\cref{subsec:clock-sync-procedure}.)
+%
+This guarantees a concentrated clock-shift outcome that the party can now use to adjust its local clock in a relative manner (further, note that the adjustment can be either negative or positive).
+%
+This gives us:
+%
+\begin{lemma}[Informal]
+    Assume that parties are equipped with physical clocks with bounded drift \clockDrift, the diffusion network has bounded delays \delay and the fluctuation on computational power (resp., number of participants) is bounded for every time window of fixed length.
+    %
+    Then, when appropriately parameterized, there exists a permissionless clock synchronization protocol that achieves (i) bounded skew (equal to $\bigTheta(\clockDrift \delay)$) between honest participants' clocks, and (ii)
+    $\varGamma$-accuracy, for a constant $\varGamma \approx \clockDrift$, against an adversary that controls a minority of the computational power, except with probability negligibly small in the security parameter.
+\end{lemma}
+
+\begin{proof}[Proof (sketch)]
+    The proof is based on the following observations.
+    %
+    First, in an (unknown yet sufficiently large) subset of the $m$ parallel chains, in constant time, parties will reach agreement over the sync-messages.
+    %
+    Second, each chain individually suggests a particular clock shift that a party may apply to adjust its clock --- we say that a clock shift is ``good'' if it is on a chain that the participants agree on.
+    %
+    Third, due to the fact that the local arrival times of the sync-messages are different for every participant, good clock shifts are bounded by the network delay \delay plus the clock drift that has taken place during
+    this synchronization window, overall a skew of $\clockDrift \cdot \syncLen + \delay$, where \syncLen is the length of the window.
+    %
+    Fourth, the approximate-agreement step will concentrate the clock shifts into output values that for all honest parties exhibit a skew very close to $\clockDrift \cdot \syncLen + \delay$.
+
+    That completes the bounded skew argument.
+    %
+    Regarding accuracy, the intuition behind the proof is that fast parties will continuously adjust their clocks backwards and slow parties will similarly continuously push their clocks forward.
+    %
+    The reason this does not achieve perfect drift \clockDrift against nominal time is due to the network delay \delay, but by adjusting the synchronization window's length to be a multiple of \delay we can approximate \clockDrift from above by up to any constant.
+\end{proof}
+
+\paragraph{Permissionless and self-sufficient SMR with fast fairness.}
+%
+Next, we show how a permissionless SMR protocol with the desired properties can be built by extending our parallel-blockchain-based clock synchronization mechanism.
+%
+The starting point is the one-shot PoW-based consensus protocol in~\cite{EC:GarKiaShe24}, which enables a set of unacquainted participants to agree on a batch of transactions in expected-constant time assuming an honest majority
+of queries to oracle $H(\cdot)$.
+
+Note that a sequential composition of many instances of the protocol in~\cite{EC:GarKiaShe24} does not suffice for our purposes.
+%
+To understand why, recall that in their construction, the parallel blockchains are secured via a hard-coded \emph{density} parameter such that for a chain to be valid in an interval, it has to point to sufficiently many dense chains in the previous interval; this guarantees freshness as dense chains contain honest parties' contributions.
+%
+While employing a hard-coded density parameter in the protocol helps in the \textbf{fixed participation} case, where the mining difficulty remains always the same, it fundamentally depends on having access to a shared notion of time that is not available in our setting (unless one runs a clock synchronization procedure).
+%
+But even if one composes our clock synchronization protocol in parallel with their ledger protocol, the resulting scheme will not be secure in the honest majority setting.
+
+Indeed, when the adversary has the power to influence the mining difficulty (by building chains jointly with the honest parties, or completely dropping out from the protocol), the density parameter value should be set
+%
+(i) relatively small so that even if the adversary completely drops out, the honest parties alone can build chains that are sufficiently dense, as otherwise the protocol ``dies'';
+%
+and (ii) relatively large so that the adversary cannot mine a dense private fork alone early on before the end of an interval.
+%
+These two conflicting requirements imply that with dynamic participation, hard-coding a density parameter cannot work with an adversary that controls more than one third of the computational resources, as otherwise he can break the protocol by maliciously influencing the mining target.
+
+We now describe at a high level how our new parallel chains approach is built on top of our clock synchronization protocol.
+%
+We divide time in synchronization intervals, and our protocol combines two phases, a pre-agreement phase that produces a candidate batch of transactions and an agreement phase where parties try to settle the batch of transactions.
+%
+As mentioned earlier, our protocol is inspired by the ``chain-king'' approach proposed in~\cite{EC:GarKiaShe24} that has parties collect transactions and submit them in the form of a batch together with their sync messages in the $m$ parallel blockchains while it sets one of the parallel chains as the ``king chain.''
+
+In the pre-agreement phase, parties observe the batch of transactions with the minimum hash value and if their input batch is different to that, they switch their input.
+%
+Subsequently they follow the chain-king protocol in the agreement phase where parties will follow the batch dictated by the majority of the parallel chains, if that batch has strong support, while if not, the parties will fall back to the view provided by the king chain.
+%
+Observe that this enables the ledger to advance in expected-constant time.
+%
+Regarding target recalculation, we treat each blockchain independently, adjusting its mining target following the reverse Bitcoin blockchain's recalculation formula of~\cite{TCC:GarKiaShe22} at regular intervals.
+%
+Finally, by a suitable sequential composition of expected-constant-time consensus protocol invocations (where we have to deal with the nuisance of non-simultaneous termination), we obtain our permissionless SMR protocol.
+%
+The resulting protocol gives a distributed ledger that confirms all transactions in expected-constant time, and has no dependency on global clocks, yielding a \textbf{self-sufficient SMR protocol}.
+%
+In addition, regarding newly joining parties, our state retrieval and bootstrapping mechanism allows them to learn the online parties' common view of the previous consensus invocations, which as we show is sufficient for fresh parties to synchronize with the SMR protocol state.
+
+Regarding (fast) fairness, the high-level idea is to let parties generate their own public-key/secret-key pairs, use their public keys as identifiers, and insert them as a special transaction (recall the ``coinbase'' transactions in the context of the Bitcoin protocol) when they submit their batch of transactions in the pre-agreement step.
+%
+This gives us:
+
+\begin{theorem}[Informal] \label{thm:state-machine-replication}
+    Assume that parties are equipped with physical clocks with bounded drift \clockDrift, the diffusion network has bounded delay \delay, and the fluctuation on computational power (resp., number of participants) is bounded for every time window of a given fixed length.
+    %
+    Then, assuming an appropriate parameterization, there exists a permissionless SMR protocol that achieves Consistency, \emph{expected-constant} Liveness, $\varGamma$-Timekeeping and Fast Fairness, against an adversary that controls a minority of the computational power, except with probability negligibly small in the security parameter.
+\end{theorem}
+
+\begin{proof}[Proof (sketch)]
+    Our analytical framework is based on that in~\cite{C:GarKiaLeo17,EPRINT:GarKiaLeo20}; however, we make the necessary adaptations to our setting.
+
+    As a warm-up, we first give a high-level overview of the original framework.
+    %
+    In~\cite{C:GarKiaLeo17,EPRINT:GarKiaLeo20}, an execution is said to be ``typical'' if, for any time interval of length at least $\lambda$ rounds (where $\lambda$ is a protocol security parameter), random variables with respect to the honest/adversarial mining success stay close to their expected value and bad events with respect to the random oracle never happen.
+    %
+    It is then shown that when $\lambda$ is sufficiently large, with overwhelming probability an execution is typical.
+    %
+    Based on the convergence properties of the relevant random variables, an induction-style proof shows that when good events --- steady block generation rate and accurate block timestamps --- hold at the beginning of the execution, they will also hold in all rounds thereafter by induction.
+    %
+    Next, all the basic blockchain properties --- i.e., chain growth, common prefix and chain quality --- are shown to hold throughout the execution.
+
+    Unfortunately, the same type of argument cannot directly apply to our setting, as we aim at arguing that good properties on parallel blockchains happen for \emph{every} constant-size interval --- in other words, a sequence of constant number of rounds whose security (i.e., quality of convergence) has not been a concern in typical executions.
+
+    To tackle the problem of analyzing executions for every constant-size interval, we revisit the definition of typical executions and make the following changes.
+    %
+    First, instead of looking for good convergence on random variables for every $\lambda$ rounds, we now reason about the convergence probability on every sequence of length at least $\ell$ rounds, where $\ell$ is a constant and is independent of the protocol security parameter.
+    %
+    In other words, our new definition of ``typical executions'' is stronger than the previous one as it concerns properties on shorter round sequences.
+    %
+    After reducing the minimum length of sequences that we are interested in, we then prove that for any such sequence, a set of ideal convergence properties (specified in~\cref{def:ideal-conv-events}) hold with a constant probability.
+    %
+    Next, we argue that, given the constant probability with which random variables yield good convergence, the ideal events of honest parties sharing a common view and producing a majority of input blocks also happens with constant probability for an interval of constant number of rounds.
+
+    The above arguments are now sufficient to apply amplification across the $m$ parallel blockchains.
+    %
+    Given the independence of the $m$ parallel blockchain instances, we prove that at the end of each interval, honest parties share a common view and produce more input blocks on an (unknown) subset of more than $(1 - \delta)m$ chains, where $\delta > 0$ can be an arbitrarily small constant after tuning the protocol parameters (this property is termed \emph{interval oblivious agreement} --- see \cref{thm:interval-oblivious-agreement}).
+
+    Using interval oblivious agreement, we then prove that by executing the synchronization procedure and state update algorithm, honest parties maintain good skews and correctly update their internal ledger state.
+
+    Regarding Fairness, we observe that in our pre-agreement step parties will be able to mine blocks with probability proportional to the number of each party's queries to $H(\cdot)$ and the minimum hash value will select one of the transaction batches at random.
+    %
+    Provided that the king chain is good (a constant-probability event that can be calibrated close to $1$), all honest parties will switch to the same transaction batch which will satisfy the fairness property with a suitable error.
+    %
+    Therefore, we conclude that \pSMR solves SMR with all the desired properties.
+\end{proof}
