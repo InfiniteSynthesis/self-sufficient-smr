@@ -64,11 +64,11 @@ Here we extend this result to the bounded-delay network setting.
     %
     There exists a subset $S \subseteq \{1, 2, \ldots, m \}$, $|S| > m - \eta$, such that for all $i \in S$, the following properties hold on chains $\chain = \parallelChains_i$ and $\chain' = \parallelChains'_i$:
     %
-    \begin{enumerate}[label=\FlatSteel, leftmargin=*, nosep]
+    \begin{cccItemize}[nosep]
         \item \emph{\bf Agreement}: $\chainPrefixUB{\chain}{\ell - k} = \chainPrefixUB{\chain'}{\ell - k}$.
 
         \item \emph{\bf Honest input-block majority}: More than half of the input-blocks included in $\chainPrefixUB{\chain}{\ell - k}$ and $\chainPrefixUB{\chain'}{\ell - k}$ are produced by honest parties.
-    \end{enumerate}
+    \end{cccItemize}
 \end{lemma}
 
 \begin{proof}[Proof (sketch)]
