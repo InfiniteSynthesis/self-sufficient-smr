@@ -1,0 +1,26 @@
+{
+  "editor.wordWrap": "wordWrapColumn",
+  "editor.fontSize": 12,
+  "latex-workshop.formatting.latex": "latexindent",
+  "editor.rulers": [
+    {
+      "column": 80,
+      "color": "#BB6588"
+    }
+  ],
+  "cSpell.mergeCSpellSettings": false,
+  "cSpell.words": [
+    "blocktree",
+    "blocktrees",
+    "bookkeep",
+    "bookkeeps",
+    "interruptible",
+    "Nakamoto",
+    "permissioned",
+    "permissionless",
+    "polylogarithmic",
+    "timestamping",
+    "unforgeable"
+  ],
+  "cSpell.enabled": true
+}
