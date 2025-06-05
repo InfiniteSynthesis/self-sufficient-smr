@@ -1,0 +1,44 @@
+\begin{tabularx}{\textwidth}{c  X}
+    \toprule
+    \textbf{Variable}
+     & \textbf{Description}
+    \\ \midrule[.3mm]
+    \localTime
+     & Party \party's local time in the form of interval index and round index $\localTime = \protocolTime{\interval}{\round}$.
+    \\ \midrule
+    \epoch
+     & Party \party's local epoch index.
+    \\ \midrule
+    \parallelChainsLocal
+     & Party \party's local working parallel chains (which \party tries to extend).
+    \\ \midrule
+    \parallelTreesLocal
+     & Party \party's local parallel tree (all valid chains that \party has seen so far).
+    \\ \midrule
+    \futureChains
+     & The buffer that stores all incoming new parallel-chains.
+    \\ \midrule
+    \buffer
+     & The buffer that stores all incoming transactions.
+    \\ \midrule
+    \inputBlockBuffer
+     & The buffer that stores all incoming input blocks.
+    \\ \midrule
+    \isSync
+     & A bit variable to store the synchronization status
+    \\ \midrule
+    \fetchCompleted
+     & A variable to store whether the round messages have been
+    fetched.
+    \\ \midrule
+    $\mathsf{arrivalTime}(\cdot)$
+     & A mapping from input-blocks to their corresponding local arrival time.
+    \\ \midrule
+    \state
+     & The ledger state.
+    \\ \midrule
+    $\mathtt{snapshot}$
+     & A mapping from interval index to party's local view (represented by $m$ block hashes) at the end of that interval.
+    \\ \bottomrule
+    \caption{Main state variables in \pSMR.}
+\end{tabularx}

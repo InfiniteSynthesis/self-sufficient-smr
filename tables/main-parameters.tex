@@ -1,0 +1,41 @@
+\begin{tabularx}{\textwidth}{c  X}
+    \toprule
+    \textbf{Variable}
+     & \textbf{Description}
+    \\ \midrule[.3mm]
+    $\kappa$
+     & Security parameter; length of the random oracle output.
+    \\ \midrule
+    $m$
+     & The number of parallel chains ($m = \bigTheta(\log^2 \kappa)$).
+    \\ \midrule
+    \syncLen
+     & The length of a synchronization interval in number of rounds; each interval consists of three stages: (i) view convergence of length $\syncLen_{\mathsf{VC}}$ rounds; (ii) input-block generation of length $\syncLen_{\mathsf{OG}}$ rounds; and (iii) reference convergence of length $\syncLen_{\mathsf{RC}}$ rounds.
+    \\ \midrule
+    \epochLen
+     & The length of a target recalculation epoch in number of rounds.
+    \\ \midrule
+    $T$
+     & The target to successfully solve a PoW.
+    \\ \midrule
+    $h_r$
+     & Number of RO queries made by honest parties at (nominal) time $r$.
+    \\ \midrule
+    $t_r$
+     & Number of RO queries made by corrupted parties at (nominal) time $r$.
+    \\ \midrule
+    $\delta$
+     & Advantage of honest parties $(t \le (1 - \delta) h)$.
+    \\ \midrule
+    $f$
+     & Initial (and ideal) block generation rate.
+    \\ \hline
+    $\epsilon$
+     & Ideal quality of concentration of random variables.
+    \\ \midrule
+    \initSkew
+     & The initial skew (i.e., difference in nominal time) that parties may start at the beginning of each interval.
+    \\ \bottomrule
+    \caption{Main parameters of \pSMR.}
+    \label{table:main-parameters-protocol}
+\end{tabularx}
