@@ -1,0 +1,16 @@
+\begin{cccAlgorithm}
+    {$\mathsf{ExtractMiningTarget}(\chain, ep)$}
+    {extract-mining-target}
+    {Extracting the mining target for a given epoch.}
+
+    \begin{algorithmic}[1]
+        \oneLineIf{$ep = 1$}{\Return $T_0$} \Comment{Return initial target}
+        \For{$i$ \textbf{from} $2$ to $ep$}
+        \State{$\varLambda_i = |\{ \block \mathbin| \block \in \chain \wedge \lceil \timestamp{\block} / (\epochLen / \syncLen) \rceil = i \}|$}
+
+        \State{$T_i = \min \{ \max \{ \varLambda_{\mathsf{epoch}} / \varLambda_i \cdot T_{i - 1}, 1 / \tau \}, \tau \}$}
+        \Comment{\cref{eq:target-recalc}}
+        \EndFor
+        \State{\Return $T_{ep}$}
+    \end{algorithmic}
+\end{cccAlgorithm}

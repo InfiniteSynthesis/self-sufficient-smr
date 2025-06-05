@@ -1,0 +1,24 @@
+\begin{cccProtocol}
+    {$\mathsf{Deregistration}(\party, \sid, \mathtt{Reg}, \mathcal{G})$}
+    {deregistration}
+    {Parties de-register from corresponding resources.}
+
+    \begin{algorithmic}[1]
+        \If{$\mathcal{G} = \funcDriftingClock$}
+
+        \State{Set $\isSync \gets \false$}
+
+        \State{Send $(\textsc{de-register}, \sid)$ to $\mathcal{G}$ and set registration status as de-registered with $\mathcal{G}$}
+
+        \State{Output the valued received by $\mathcal{G}$}
+
+        \EndIf
+
+        \If{$\mathcal{G} = \funcLedger$}
+
+        \State{Set $\isSync \gets \false$}
+
+        \State{Send $(\textsc{de-register}, \sid)$ to \funcDiffuse, set its registration status as de-registered with \funcDiffuse and output $(\textsc{de-register}, \sid, \party)$.}
+        \EndIf
+    \end{algorithmic}
+\end{cccProtocol}

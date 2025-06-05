@@ -1,0 +1,21 @@
+\begin{cccAlgorithm}
+    {$\mathsf{IsValidInputBlock}(\inputBlock, \chain, i, \parallelTrees)$}
+    {isValidInputBlock}
+    {The input-block validation procedure.}
+
+    \begin{algorithmic}[1]
+        \LineComment{Precondition: Chain \chain is valid. Returns \true if the beacon is a valid beacon w.r.t. \chain, $\mathsf{undecided}$ if no judgement is possible, and \false if the beacon is invalid w.r.t. \chain.}
+
+        \State{Parse \inputBlock as $\langle ctr, \protocolTime{itvl}{r}, \cdot, \cdot, h^\ast_\inputBlock, \cdot, \cdot \rangle$}
+
+        \oneLineIf{\chain contains no block in interval $itvl$}{\Return $\mathsf{undecided}$}
+        \Comment{no judgement possible}
+
+        \LineComment{Check nonce value and freshness}
+        \State{Extract $h^\ast_{itvl}$ from $\chainHead{\chainPrefixUB{\chain}{(itvl - 1) \cdot \syncLen + \syncLen_{\mathsf{VC}}}}$}
+        \State{Set $T_\inputBlock \gets \mathsf{ExtractMiningTarget}(\chain, \lceil itvl / (\epochLen / \syncLen) \rceil)$.}
+        \oneLineIf{$\mathsf{ValidInputBlock}(\inputBlock, i, T_{\inputBlock}) = \true$ \textbf{and} $\stringSegment{h^\ast_\inputBlock}{i}{m} \neq \stringSegment{h^\ast_{itvl}}{i}{m}$}{\Return \true}
+
+        \State{\Return \false}
+    \end{algorithmic}
+\end{cccAlgorithm}

@@ -1,0 +1,30 @@
+\begin{cccProtocol}
+    {$\mathsf{ChainKingUpdateState}(\party, \sid)$}
+    {update-state-chain-king}
+    {The state update procedure for Chain-King Consensus.}
+
+    \begin{algorithmic}[1]
+        \LineComment{This algorithm is called once in each interval.}
+        \State{Set $(\{ val_i \}_{i \in [m]}, \cdot, king) \gets \mathsf{ExtractIntervalOutput}(\parallelChainsLocal, \interval)$}
+
+        \State{Let $v$ denote the most frequent element in $\{ val_i \}_{i \in [m]}$ and $c$ its frequency}
+
+        \If{$\interval \mod 3 = 1$}
+
+        \oneLineIf{$c > m / 2$}{set $\val \gets v$}
+        \oneLineIf{$c > 3m / 4$}{set $\decide \gets \true, \lock \gets \true$}
+
+        \ElsIf{$\interval \mod 3 = 2$}
+
+        \oneLineIf{$c > m / 2$}{set $\val \gets v$}
+        \oneLineIf{$c > 3m / 4$}{set $\lock \gets \true$}
+
+        \Else
+
+        \oneLineIf{$\lock = \false$}{set $\val \gets king$}
+        \oneLineIf{$\decide = \true$}{set $\state \gets \state \concat \val$ and $\val \gets \bot$}
+        \oneLineIf{$\decide = \false$ \textbf{and} $\lock = \true$}{set $\lock \gets \false$}
+
+        \EndIf
+    \end{algorithmic}
+\end{cccProtocol}

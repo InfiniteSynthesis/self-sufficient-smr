@@ -1,0 +1,37 @@
+\begin{cccAlgorithm}
+    {$\mathsf{ExtractIntervalOutput}(\parallelChains, itvl)$}
+    {extract-interval-output}
+    {Parties extract the output of a given interval.}
+
+    \begin{algorithmic}[1]
+        \State{Initialize $\{ val_i \}_{i \in [m]}, \{ ref_i \}_{i \in [m]}$ and $king$}
+
+        \State{Initialize $m$ empty vectors $\{ \mathbf{R}_i \}_{i \in [m]}$}
+
+        \For{$i$ \textbf{from} $1$ \textbf{to} $m$}
+        \State{Initialize an empty vector $\mathbf{V}$ and $m$ empty vectors $\{ \mathbf{R}'_i \}_{i \in [m]}$}
+        \For{each $\inputBlock \in \{\block \mathbin| \block \in \parallelChains_i \wedge \mathsf{isStageOG}(\block)\}$}
+        \State{Parse \inputBlock as $\langle \cdot, \cdot, \cdot, \cdot, \cdot, h', val \rangle$}
+        \State{Append $val$ to $\mathbf{V}$}
+        \State{\textbf{For} $i$ \textbf{from} $1$ \textbf{to} $m$ \textbf{do} Append $\stringSegment{h'}{i}{m}$ to $\mathbf{R}'_i$}
+        \EndFor
+
+        \oneLineIf{$v'$ accounts for majority in $\mathbf{V}$}{$val_i \gets v'$}
+        \State{\textbf{For} $i$ \textbf{from} $1$ \textbf{to} $m$ \textbf{do} Sort $\mathbf{R}'_i$ non-decreasingly then append $\med(\mathbf{R}'_i)$ to $\mathbf{R}_i$}
+
+        \EndFor
+
+        \For{$i$ \textbf{from} $1$ \textbf{to} $m$}
+        \If{$\exists v$ that account for more than $3m/4$ elements in $\mathbf{R}_i$}
+        \State{Set $ref_i \gets v$}
+        \Else
+        \State{Set $ref_i \gets \bot$}
+        \EndIf
+        \EndFor
+
+        \State{Choose $\inputBlock^*$ s.t. $H(\inputBlock^*) = \min \{ H(\inputBlock) \mathbin| \inputBlock \in \block \in \parallelChains_1 \wedge \mathsf{isStageOG}(\block) \}$}
+        \State{Set $king \gets \inputBlock^*.val$}
+
+        \State{\Return $(\{ val_i \}_{i \in [m]}, \{ ref_i \}_{i \in [m]}, king)$}
+    \end{algorithmic}
+\end{cccAlgorithm}

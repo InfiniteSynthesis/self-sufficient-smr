@@ -1,0 +1,53 @@
+\begin{cccProtocol}
+    {$\mathsf{ProcessInputBlocks}(\party, \sid, IB)$}
+    {process-input-blocks}
+    {Parties filter invalid input blocks.}
+
+    \begin{algorithmic}[1]
+        \oneLineIf{$\fetchCompleted = \true$}{\Return}
+
+        \State{Send $(\textsc{fetch}, \sid)$ to $\funcDiffuse^{\textsf{input}}$ and denote the response by $(\textsc{fetch}, \sid, b)$}
+
+        \State{Extract all received input blocks $(\inputBlock_1, \ldots , \inputBlock_k)$ contained in $b \cup IB$.}
+
+        \For{each $\inputBlock_i$ with $\mathsf{arrivalTime}(\inputBlock) = \bot$}
+        \State{$\inputBlockBuffer \gets \inputBlockBuffer \cup \{ \inputBlock \}$}
+
+        \State{Parse $\timestamp{\inputBlock}$ as \protocolTime{itvl'}{r'}}
+
+        \If{$\isSync \wedge (\interval \ge itvl')$}
+
+        \State{Set $\mathsf{arrivalTime}(\inputBlock_i) \gets (\localTime, \mathsf{final})$}
+        \Comment{The measurement is final.}
+
+        \Else \Comment{Will be adjusted upon next time shift.}
+        \State{$\mathsf{arrivalTime}(\inputBlock_i) \gets (\localTime, \mathsf{temp})$}
+
+        \EndIf
+        \EndFor
+
+        \LineComment{Buffer cleaning.}
+
+        \If{\isSync}
+
+        \For{each $\inputBlock \in \inputBlockBuffer$}
+
+        \oneLineIf{\timestamp{\inputBlock} has timestamp later than \interval}{skip \inputBlock}
+
+        \State{$\mathsf{goodInputBlock} \gets \false$}
+
+        \For{$i$ \textbf{from} $1$ \textbf{to} $m$}
+
+        \oneLineIf{$\exists \chain \in \parallelTreesLocal$ s.t. $\mathsf{IsValidInputBlock}(\inputBlock, \chain, i, \parallelTreesLocal) = \true$}{$\mathsf{goodInputBlock} \gets \true$}
+
+        \EndFor
+
+        \oneLineIf{$\mathsf{goodInputBlock} = \false$}{Remove \inputBlock from \inputBlockBuffer}
+
+        \EndFor
+
+        \EndIf
+    \end{algorithmic}
+
+    \textsc{Output:} The protocol outputs \ok to its caller (but not to \Z).
+\end{cccProtocol}

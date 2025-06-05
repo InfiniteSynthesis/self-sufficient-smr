@@ -1,0 +1,29 @@
+\begin{cccProtocol}
+    {$\mathsf{Registration}(\party, \sid, \mathtt{Reg}, \mathcal{G})$}
+    {registration}
+    {Parties register on necessary resources (functionalities) to run the protocol.}
+
+    \begin{algorithmic}[1]
+        \oneLineIf{$\mathcal{G} = \funcDriftingClock$}{send $(\textsc{register}, \sid)$ to $\mathcal{G}$, set registration status to registered with $\mathcal{G}$, and output the valued received by $\mathcal{G}$.}
+
+        \If{$\mathcal{G} = \funcLedger$}
+
+        \If{\party is not registered with \funcDriftingClock or already registered with all setups}
+
+        \State{ignore this input}
+
+        \Else
+
+        \State{Send $(\textsc{clock-tick}, \sid_C)$ to \funcDriftingClock and receive $(\textsc{clock-tick}, \sid_C , \mathrm{tick})$}
+
+        \State{Send $(\textsc{register}, \sid)$ to \funcDiffuse}
+
+        \State{$\localTime \gets \protocolTime{1}{1}$ and $\isSync \gets \false$}
+
+        \State{If this is the first registration invocation for this ITI, then set $\mathtt{isInit} \gets \false$.}
+
+        \State{Output $(\textsc{register}, \sid, \party)$ once completing the registration with all the above resources \func}
+        \EndIf
+        \EndIf
+    \end{algorithmic}
+\end{cccProtocol}

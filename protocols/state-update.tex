@@ -1,0 +1,43 @@
+\begin{cccProtocol}
+    {$\mathsf{UpdateState}(\party, \sid)$}
+    {update-state}
+    {The state update procedure for \pSMR with fast fairness.}
+
+    \begin{algorithmic}[1]
+        \LineComment{This algorithm is called once in each interval.}
+
+        \LineComment{Bookkeep local view of current interval}
+        \State{Set $\mathtt{snapshot}[\interval] \gets \varepsilon$}
+        \label{code:state-update-snapshot-start}
+        \For{$i$ \textbf{from} $1$ \textbf{to} $m$}
+        \State{Parse the $i$-th chain in \parallelChainsLocal as \chain}
+        \State{Parse hash of last block on $\chainPrefixUB{\chain}{\interval \cdot \syncLen - \syncLen_{\mathsf{RC}}}$ as $h$}
+        \State{$\mathtt{snapshot}[\interval] \gets \mathtt{snapshot}[\interval] \concat \stringSegment{h}{i}{m}$}
+        \EndFor
+        \label{code:state-update-snapshot-end}
+
+        \LineComment{Update internal ledger states}
+        \State{Let $\mathbf{V} = (v_1, \ldots, v_n)$ denote the output of $m$ chains respectively in super-interval $itvl$ and $king$ the minimum hash from the first chain}
+
+        \State{Let $v$ denote the most frequent element in $\mathbf{V}$ and $c$ its frequency}
+
+        \If{$\interval \mod 3 = 1$} \Comment{Lottery first.}
+
+        \oneLineIf{$\lock = \false$}{set $\val \gets king$}
+        \oneLineIf{$\decide = \true$}{set $\gets \state \concat \val$ and $\val \gets \bot$}
+        \oneLineIf{$\decide = \false$ \textbf{and} $\lock = \true$}{set $\lock \gets \false$}
+
+
+        \ElsIf{$\interval \mod 3 = 2$}
+
+        \oneLineIf{$c > m / 2$}{set $\val \gets v$}
+        \oneLineIf{$c > 3m / 4$}{set $\decide \gets \true, \lock \gets \true$}
+
+        \Else
+
+        \oneLineIf{$c > m / 2$}{set $\val \gets v$}
+        \oneLineIf{$c > 3m / 4$}{set $\lock \gets \true$}
+
+        \EndIf
+    \end{algorithmic}
+\end{cccProtocol}

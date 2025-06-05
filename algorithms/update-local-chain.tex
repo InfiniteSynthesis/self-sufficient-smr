@@ -1,0 +1,30 @@
+\begin{cccAlgorithm}
+    {$\mathsf{UpdateLocalChain}(\parallelChains, \parallelTrees, \mathcal{N}_0 = \{ \chain_1, \ldots, \chain_N \})$}
+    {update-local-chain}
+    {Parties filter invalid chains and select the heaviest one.}
+
+    \begin{algorithmic}[1]
+        \LineComment{This algorithm should only be called by fully-synchronized parties.}
+
+        \For{$itvl$ \textbf{from} $1$ \textbf{to} \interval}
+        \For{each $\chain \in \mathcal{N}_0$}
+        \State{Let $i$ be the chain index of \chain}
+        \If{$\mathsf{IsValidChain}(\chain, i, \parallelTrees, itvl) = \true$}
+        \State{Add $\chainPrefixUB{\chain}{itvl \cdot \syncLen}$ to the $i$-th tree in \parallelTrees}
+        \Else \Comment{invalid chain from $itvl$}
+        \State{Remove \chain from $\mathcal{N}_0$}
+        \EndIf
+        \EndFor
+        \EndFor
+
+        \For{$i$ \textbf{from} $1$ \textbf{to} $m$}
+        \State{Set $\chain_{\mathrm{max}} \gets \parallelChains_i$}
+        \For{each $\chain \in \parallelTrees_i$}
+        \oneLineIf{$\chainDiff{\chain} > \chainDiff{\chain_{\mathrm{max}}}$}{$\chain_{\mathrm{max}} \gets \chain$}
+        \EndFor
+        \State{Replace the $i$-th chain in \parallelChains by $\chain_{\mathrm{max}}$}
+        \EndFor
+
+        \State{\Return $\parallelChains, \parallelTrees$}
+    \end{algorithmic}
+\end{cccAlgorithm}

@@ -1,0 +1,62 @@
+\begin{cccAlgorithm}
+    {$\mathsf{IsValidChain}(\chain, i, \parallelTrees, itvl)$}
+    {isvalidchain}
+    {The chain validation procedure.}
+
+    \newcommand*{\goodHash}{\mathEnv{\mathsf{goodHash}}}
+    \newcommand*{\goodNonce}{\mathEnv{\mathsf{goodNonce}}}
+    \newcommand*{\goodTime}{\mathEnv{\mathsf{goodTime}}}
+    \newcommand*{\goodInputBlock}{\mathEnv{\mathsf{goodInputBlock}}}
+    \newcommand*{\goodCRS}{\mathEnv{\mathsf{goodCRS}}}
+
+    \begin{algorithmic}[1]
+        \LineComment{This algorithm has five internal Boolean variables \goodHash, \goodNonce, \goodTime, \goodCRS and \goodInputBlock, all initialized as \true.}
+
+        \oneLineIf{\chain starts with a block with hash reference other than $\mathsf{CRS}$}{$\goodCRS \gets \false$}
+
+        \oneLineIf{\isSync \textbf{and} $\exists \block \in \chain$ s.t. $\mathsf{validOrder}(\timestamp{\block}, \localTime) = \false$}{$\goodTime \gets \false$}
+
+        \LineComment{Derive fresh randomness for $itvl$ as indicated by \chain}
+        \State{Extract $h^\ast_{itvl}$ from $\chainHead{\chainPrefixUB{\chain}{(itvl - 1) \cdot \syncLen + \syncLen_{\mathsf{VC}}}}$}
+
+        \For{each block \block in \chain from interval $itvl$}
+
+        \State{Parse \block as $\langle ctr, \protocolTime{itvl}{r}, h, st, \cdot, \cdot, \cdot \rangle$}
+
+        \State{Set $T_\block \gets \mathsf{ExtractMiningTarget}(\chain, \lceil itvl / (\epochLen / \syncLen) \rceil)$.}
+            \Comment{Extract mining difficulty set for \block}
+
+            \LineComment{Check hash}
+            \State{Let $\block^{-1}$ be the last block in \chain before \block}
+            \State{Set $\goodHash \gets (\stringSegment{h}{i}{m} = \stringSegment{H(\block^{-1})}{i}{m})$}
+
+            \LineComment{Check nonce}
+            \State{Set $\goodNonce \gets \mathsf{ValidBlock}(\block, i, T_\block)$}
+
+            \LineComment{Check input blocks}
+
+            \If{$\neg \mathsf{isStageOG}(itvl, r)$ \textbf{and} $\exists \inputBlock \in \block$}
+            \State{Set $\goodInputBlock \gets \false$}
+            \Comment{Block should include \inputBlock only in \textsf{OG}}
+            \Else
+
+            \For{each input block $\inputBlock \in \block$}
+            \State{Parse \inputBlock as $\langle ctr', \protocolTime{itvl'}{r'}, \cdot, \cdot, h^\ast_\inputBlock, \cdot, \cdot \rangle$}
+
+            \oneLineIf{$\mathsf{isStageOG}(itvl, r) = \false$ \textbf{or} $\timestamp{\inputBlock} > \timestamp{\block}$}{$\goodInputBlock \gets \false$}
+
+            \oneLineIf{\chain contains duplicate \inputBlock \textbf{or} $\stringSegment{h^\ast_\inputBlock}{i}{m} \neq \stringSegment{h^\ast_{itvl}}{i}{m}$}{$\goodInputBlock \gets \false$}
+
+            \State{Set $T_\inputBlock \gets \mathsf{ExtractMiningTarget}(\chain, \lceil itvl' / (\epochLen / \syncLen) \rceil)$.}
+        \State{Set $\goodInputBlock \gets \mathsf{ValidInputBlock}(\inputBlock, i, T_{\inputBlock})$}
+
+        \EndFor
+
+        \EndIf
+
+        \EndFor
+
+        \oneLineIf{$\goodHash \wedge \goodNonce \wedge \goodInputBlock \wedge \goodTime \wedge \goodCRS$}{\Return \true}
+        \State{\Return \false}
+    \end{algorithmic}
+\end{cccAlgorithm}

@@ -1,0 +1,18 @@
+\begin{cccProtocol}
+    {$\mathsf{UpdateLocalTime}(\party, \sid)$}
+    {update-local-time}
+    {Parties update their local clock due to \funcDriftingClock.}
+    
+    \begin{algorithmic}[1]
+        \LineComment{Precondition: Only executed if time-aware.}
+        \State{Send $(\textsc{clock-tick}, \sid)$ to \funcDriftingClock and receive $(\textsc{clock-tick}, \sid , \mathrm{tick})$}
+
+        \If{$\mathrm{tick} = 0$}
+        \State{$\localTime \gets \localTime + 1$}
+        \State{$\fetchCompleted \gets \false$}
+        \EndIf
+        \State{$\epoch \gets \lceil \interval / (\epochLen / \syncLen) \rceil$}
+    \end{algorithmic}
+
+    \textsc{Output:} The protocol outputs \localTime, \epoch to its caller (but not to \Z)
+\end{cccProtocol}

@@ -1,0 +1,90 @@
+\begin{cccProtocol}
+    {$\mathsf{MiningProcedure}(\party, \sid)$}
+    {mining-procedure}
+    {The mining procedure of $m$ parallel blocks/input-blocks.}
+
+    \begin{algorithmic}[1]
+        \LineComment{The following steps are executed in an (maintain-ledger, sid, minerID)-interruptible manner:}
+
+
+        \State{$h \gets \varepsilon$}
+        \Comment{Prepare chain head}
+
+        \For{$i$ \textbf{from} $1$ \textbf{to} $m$}
+        \State{Parse the last block of $i$-th chain in \parallelChainsLocal as \block}
+        \Comment{Possibly genesis block (CRS)}
+        \State{$h \gets h \concat \stringSegment{H(\block)}{i}{m}$}
+        \EndFor
+
+
+        \If{$\mathsf{isStageOG}(\localTime)$}
+
+        \State{Set $h^\ast \gets \varepsilon$ and $st \gets \varepsilon$}
+
+        \LineComment{Prepare fresh randomness}
+        \For{$i$ \textbf{from} $1$ \textbf{to} $m$}
+        \State{Parse the last block in the \textsf{VC} stage of $i$-th chain in \parallelChainsLocal as \block}
+        \State{$h^\ast \gets h^\ast \concat \stringSegment{H(\block)}{i}{m}$}
+        \EndFor
+
+        \LineComment{Prepare block content}
+        \State{$\mathbf{N} \gets \varepsilon$}
+        \For{$i$ \textbf{from} $1$ \textbf{to} $m$}
+        \State{Parse the $i$-th chain in \parallelChainsLocal as \chain}
+        \State{Set $IB \gets \{\inputBlock' \in \inputBlockBuffer \mathbin| \mathsf{IsValidInputBlock}(\inputBlock', \chain, i, \parallelTreesLocal) = \true \}$}
+        \State{Set $IB' \gets \{ \inputBlock' \in IB \mathbin| \inputBlock' \in \block' \in \chain \}$}
+        \State{$\mathbf{N} \gets \mathbf{N} \concat (IB \backslash IB')$}
+        \EndFor
+        \State{$st \gets \mathsf{blockify}(\mathbf{N})$}
+
+        \Else
+        \State{Set $h^\ast \gets 0^\kappa$ and $st \gets 0^\kappa$}
+        \EndIf
+
+        \LineComment{Prepare chain reference $h'$}
+        \State{Set $h' \gets \mathtt{snapshot}[\interval - 1]$}
+
+        \LineComment{Prepare input \val}
+
+        \If{$\val = \bot$}
+        \State{Set $\buffer' \gets \buffer$, $\vec{N} \gets \tx^{\text{base-tx}}_\party(\mathsf{pk})$, and $\val \gets \blockify(\vec{N})$}
+        \Repeat
+        \State{Parse $\buffer'$ as sequence $(\tx_1, \ldots, \tx_n)$}
+        \For{i \textbf{from} $1$ \textbf{to} $n$}
+        \If{$\mathsf{ValidTx}(\tx_i, \state \concat \val) = 1$}
+        \State{Set $\vec{N} \gets \vec{N} \concat \tx_i$}
+        \State{Remove $\tx_i$ from $\buffer'$}
+        \State{Set $\val \gets \blockify(\vec{N})$}
+        \EndIf
+        \EndFor
+        \Until{$\vec{N}$ does not increase any more}
+        \EndIf
+
+
+        \LineComment{\mforone PoW mining}
+        \State{$u \gets H(ctr, \localTime, h, st, h^\ast, h', \val)$}
+
+        \State{Set $\mathsf{newChain}, \mathsf{newIB}$ as \false}
+
+        \For{$i = 1$ \textbf{to} $m$}
+
+        \State{Set $T_i \gets \mathsf{ExtractMiningTarget}(\chain, \epoch)$ where \chain is the $i$-th chain in \parallelChainsLocal}
+
+        \If{$\stringSegment{u}{i}{m} < T_i$}
+        \Comment{Extend $i$-th chain}
+        \State{Set $\block \gets \langle ctr, \localTime, h, st, h^\ast, h', \val \rangle$ and $\mathsf{newChain} \gets \true$}
+        \State{Append \block to the $i$-th chain of \parallelChainsLocal and \parallelTreesLocal}
+        \EndIf
+
+        \If{$\mathsf{isStageOG}(\localTime)$ \textbf{and} $\stringSegmentRev{u}{i}{m} < T_i$}
+        \State{Set $\inputBlock \gets \langle ctr, \localTime, h, st, h^\ast, h', \val \rangle$ and $\mathsf{newIB} \gets \true$}
+        \EndIf
+        \EndFor
+
+        \LineComment{Diffuse the extended chain and wait}
+        \oneLineIf{$\mathsf{newChain} = \true$}{send $(\textsc{diffuse}, \sid, \parallelTreesLocal)$ to $\funcDiffuse^{\textsf{bc}}$ and set anchor here.\footnote{Upon next activation of this procedure, it resumes from the anchor set last time.}}
+
+        \oneLineIf{$\mathsf{newIB} = \true$}{Send $(\textsc{diffuse}, \sid, \inputBlock)$ to $\funcDiffuse^{\textsf{input}}$ and set anchor here.}
+        \State{Set $ctr \gets ctr + 1$, give up activation and set anchor here.}
+    \end{algorithmic}
+\end{cccProtocol}

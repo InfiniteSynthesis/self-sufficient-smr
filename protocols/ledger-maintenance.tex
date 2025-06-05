@@ -1,0 +1,57 @@
+\begin{cccProtocol}
+    {$\mathsf{LedgerMaintenance}(\party, \sid)$}
+    {ledger-maintenance}
+    {The main operations for parties to maintain the ledger.}
+
+    \begin{algorithmic}[1]
+        \LineComment{The following steps are executed in an $(\textsc{maintain-ledger}, \sid, \mathrm{minerID})$-interruptible manner:}
+
+        \If{$\mathtt{isInit} = \false$}
+        \State{Send $(\textsc{Retrieve, \sid})$ to \funcCRS and set response as \textsf{CRS} and set $\mathtt{isInit} \gets \true$.}
+        \EndIf
+
+        \LineComment{Bootstrap if not synchronized.}
+        \oneLineIf{\textbf{not} \isSync}{Call $\mathsf{JoiningProcedure}(\party, \sid)$}
+        \Comment{\cref{protocol:joining-procedure}}
+
+        \LineComment{Normal operations when alert.}
+
+        \State{Invoke $\mathsf{FetchInformation}(\party, \sid)$ and denote the output by $(\chain_1, \ldots, \chain_N)$, $(\tx_1, \ldots, \tx_k)$}
+        \State{$\buffer \gets \buffer \concat (\tx_1, \ldots, \tx_k)$ and $\futureChains \gets \futureChains \cup \{ \chain_1, \ldots, \chain_N \}$}
+
+        \State{Call $\mathsf{UpdateLocalTime}(\party, \sid)$}
+        \Comment{\cref{protocol:update-local-time}}
+
+        \LineComment{Ensures the processing of new input-blocks arrived in chains only.}
+        \State{Extract input-blocks $IB \gets \{ \inputBlock_1, \ldots , \inputBlock_n \}$ contained in $\chain_1, \ldots, \chain_N$ and not yet contained in \inputBlockBuffer.}
+
+        \State{Call $\mathsf{ProcessInputBlocks}(P, \sid, IB)$}
+        \Comment{\cref{protocol:process-input-blocks}}
+
+        \State{Let $\mathcal{N}_0$ be a set of (single) chains s.t. $\chain \in \mathcal{N}_0 :\Leftrightarrow \chain \in \parallelChains \in \futureChains \wedge \forall \block \in \chain : \timestamp{\block} \le \localTime$}
+
+        \State{Remove each $\chain \in \mathcal{N}_0$ from \futureChains}
+
+        \State{$\fetchCompleted \gets \true$}
+
+        \State{Call $\mathsf{UpdateLocalChain}(\parallelChainsLocal, \parallelTreesLocal, \mathcal{N}_0)$ to update \parallelChainsLocal and \parallelTreesLocal}
+
+        \If{$t_{\mathsf{work}} < \localTime$}
+        \State{Call $\mathsf{MiningProcedure}(\party, \sid, r)$}
+        \Comment{\cref{protocol:mining-procedure}}
+
+        \If{$\round = \interval \cdot \syncLen$}
+        \State{Call $\mathsf{StateUpdate}(\party, \sid)$}
+        \Comment{\cref{protocol:update-state}}
+        \State{Call $\mathsf{SyncProcedure}(\party, \sid)$}
+        \Comment{\cref{protocol:sync-procedure}}
+        \EndIf
+
+        \State{Set $t_{\mathsf{work}} \gets \localTime$}
+
+        \EndIf
+
+        \State{Call $\mathsf{FinishRound}(\party)$}
+        \Comment{Mark normal round actions as finished}
+    \end{algorithmic}
+\end{cccProtocol}

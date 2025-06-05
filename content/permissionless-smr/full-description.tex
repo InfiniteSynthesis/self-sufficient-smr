@@ -1,0 +1,188 @@
+\subsection{Full Protocol Description}
+\label{subsec:full-protocol-description}
+
+\paragraph{Main protocol instance.}
+%
+We introduce the main \pSMR protocol instance that dispatches to the relevant subprocesses following the UC notions.
+
+\input{protocols/main-protocol}
+
+\paragraph{Registration / de-registration.}
+%
+In order to perform basic operations, a party \party needs to register to all resources.
+%
+Note that the protocol will initialize local time $\party.\localTime$ to \protocolTime{1}{1}, and \party is aware whether he is not synchronized not and will set the bit variable \isSync correspondingly.
+
+\input{protocols/registration}
+
+The deregistration process is an analogous action that sets variables to the initial values.
+
+\input{protocols/deregistration}
+
+\paragraph{Ledger maintenance.}
+%
+The protocol $\mathsf{LedgerMaintenance}$ groups all the steps regarding the main ledger operation.
+%
+Note that, depending on a party is alert or not, she might execute different sub protocols.
+%
+For parties that are not synchronized, after querying \funcCRS, they first enter the bootstrapping mode by calling $\mathsf{JoiningProcedure}$.
+%
+By executing this sub protocol, they set their internal state \isSync to true and then start to execute the normal ledger maintenance operations.
+
+\input{protocols/ledger-maintenance}
+
+\paragraph{Fetch information.}
+%
+Parties fetch block information from $\funcDiffuse^{\textsf{bc}}$ to learn new parallel chains (precisely, blocktrees) with possibly future timestamps.
+%
+Note that in order to simplify the chain validation and selection procedure, we let $\mathsf{FetchInformation}$ return all single chains $\chain_1, \ldots, \chain_N$ extracted from all received blocktrees\footnote{Parties associate all blocktrees/chains with their index $i \in [m]$ in parallel chains(trees), and thus apply chain validation and validation for chains with the same index. For brevity, we ignore these details in our protocol description and assume all chains are processed correspondingly.}.
+%
+Parties also fetch transactions from $\funcDiffuse^{\textsf{tx}}$ to learn new transactions.
+
+\input{protocols/fetch-info}
+
+\paragraph{Chain and input block validation.}
+%
+We present the chain and input block validation procedure in \pSMR respectively.
+%
+Note that, different from the single chain protocols where the validity of each chain can be attested independently, chains in \pSMR need to be verified per interval (see the chain selection procedure in~\cref{algorithm:update-local-chain}).
+%
+Hence the algorithm $\mathsf{IsValidChain}$ takes as input a chain \chain, an integer $i$ the index of \chain in parallel chains, a parallel blocktree \parallelTrees that \chain is associate with and an integer $itvl$ the target interval on \chain to be verified.
+
+The blocks (input-blocks) in \pSMR are of form
+%
+\[ \block = \langle ctr, \protocolTime{itvl}{r}, h, st, h^\ast, h', val \rangle, \]
+%
+where $ctr$ is the nonce for PoW, \protocolTime{itvl}{r} shows the block timestamp, $h$ is the hash pointer to the previous block, $st$ represents the block content (note that $h$ and $st$ are meaningful only for a block \block), $h^\ast$ is the fresh randomness when mining input-blocks, and $h', val$ is the chain reference for previous intervals (cf.~\cref{subsec:new-parallel-blockchain}) and input-block content respectively.
+
+The following functions help us simplify the validation process:
+%
+\begin{cccItemize}[noitemsep]
+    \item We use \textsf{ValidBlock} to verify if a block is a successful PoW on the $i$-th chain (that is, the nonce $ctr$ is valid and the block hash --- $i$-th segment of the RO output is less than target $T$).
+    %
+    \[ \mathsf{ValidBlock}(\block, i, T) \triangleq \stringSegment{H(\block)}{i}{m} < T \wedge \block.ctr < 2^{32}. \]
+
+    \item Analogously, we use use \textsf{ValidInputBlock} to verify if a synchronization beacon is a successful PoW on its associated chain by checking the reverse of the string segment.
+    %
+    I.e.,
+    %
+    \begin{equation*}
+        \mathsf{ValidInputBlock}(\inputBlock, i, T) = \stringSegmentRev{H(\inputBlock)}{i}{m} < T \wedge \inputBlock.ctr < 2^{32}
+    \end{equation*}
+
+    \item We adopt \textsf{isStageOG} as a predicate to justify if a timestamp $r$ is in the output generation stage of interval $itvl$.
+    %
+    Precisely,
+    %
+    \begin{equation*}
+        \mathsf{isStageOG}(itvl, r) \triangleq r \in [(itvl - 1) \cdot \syncLen + \syncLen_{\mathsf{VC}}, itvl \cdot \syncLen - \syncLen_{\mathsf{RC}}].
+    \end{equation*}
+\end{cccItemize}
+
+Given the above, \cref{algorithm:isvalidchain} presents a full specification of the chain validation procedure.
+
+\input{algorithms/is-valid-chain}
+
+Regarding input blocks that have not yet been included in chains, the validity of an \inputBlock with respect to a chain index $i$ is checked only when the party's local time has forwarded to at least the same interval as \inputBlock (if not, this procedure returns ``undecided'' which defers the validity check).
+
+\input{algorithms/is-valid-inputblock}
+
+\paragraph{Extract mining target.}
+%
+We adopt algorithm $\mathsf{ExtractMiningTarget}$ to calculate the mining difficulty set for an epoch index $ep$ on a single chain \chain.
+%
+Starting from the initial target $T_0$, this algorithm iteratively calculates targets from the first epoch to the targeted one, based on the number of blocks in each epoch and \cref{eq:target-recalc}.
+
+\input{algorithms/extract-mining-target}
+
+\paragraph{Update local time.}
+%
+Parties will send \textsc{clock-tick} to \funcDriftingClock to check if it receives a $\mathrm{tick} = 0$, which indicates the beginning of a new (local) round.
+
+\input{protocols/update-local-time}
+
+\paragraph{Process input blocks and arrival times.}
+%
+The following procedure processes incoming input blocks, bookkeeps their arrival times and filters out duplicate ones.
+%
+The predicate to verify input-block validity is presented in~\cref{algorithm:isValidInputBlock}.
+%
+Regarding the duplicate beacons, only one with the earliest arrival time will be preserved.
+
+\input{protocols/process-inputblock}
+
+\paragraph{Chain selection.}
+%
+Our chain selection rule (which should only be used by time-aware parties) works in two steps.
+%
+First, it filters all invalid chains, by verifying them in an interval-by-interval fashion.
+%
+I.e., chains are split into intervals and the $(i + 1)$-th interval is checked after the $i$-th interval of all chains has been checked.
+%
+An invalid chain $\chain^*$ is removed out of the chain buffer once any interval of $\chain^*$ fails the $\mathsf{IsValidChain}$ verification.
+%
+And all valid chains are added to \parallelTrees as a fork (we do this interval-by-interval as well).
+%
+After filtering all invalid chains, the next step runs the chain selection procedure for every chain index in the current interval, and replaces each chain in \parallelChains with the longest fork in the corresponding tree in \parallelTrees.
+
+\input{algorithms/update-local-chain}
+
+\paragraph{Mining procedure.}
+%
+Once a party \party has prepared all information and updated its state, she can run the core mining procedure in~\cref{protocol:mining-procedure}.
+%
+When \localTime reports in the output generation phase, \party will include the fresh input blocks and check if she succeeds in the input-block mining procedure.
+%
+At the onset of a BA invocation (when internal variable \val is set to $\bot$), \party starts to build her own input, starting from a coinbase transaction $\tx_\party^{\text{base-tx}}$ that contains her public key $\mathsf{pk}$ and she also signs this transaction.
+
+Note that, for simplicity, we adopt two functions \blockify and $\mathsf{ValidTx}$ (cf.~\cite{C:BMTZ17}) that translates a sequence of transactions to the ledger state and verifies an incoming transaction w.r.t. a ledger state respectively, which we omit the details.
+
+\input{protocols/mining-procedure}
+
+\paragraph{Interval output algorithm.}
+%
+The following algorithm, on input parallel chains \parallelChains and a target interval $itvl$, outputs a triple $(\{ val_i \}_{i \in [m]}, \{ ref_i \}_{i \in [m]}, king)$.
+%
+The $i$-th element in the first vector $val_i$ is the output of the $i$-th chain in interval $itvl$ (i.e., the majority value of all input-blocks); and the $i$-th element in the second vector $ref_i$ is the reference to $i$-th chain in the previous interval (possibly being $\bot$); and $king$ is a single value extracted from the input block with minimum hash from the first chain.
+
+Note that, each $ref_i$ is extracted by observing an invocation of weak agreement over the parallel chains in this interval.
+%
+I.e., we run $m$ weak agreement protocol instances in parallel, where each one follows \cref{protocol:approximate-consensus} in~\cref{subsec:apa-honst-majority}.
+
+\input{algorithms/extract-interval-output}
+
+\paragraph{State update procedure.}
+%
+We first present the basic state update algorithm in Chain-King Consensus.
+
+\input{protocols/chain-king-update-state}
+
+Note that in our SMR protocol, when a party \party is about to finish local interval \interval, she first stores her local view of the chains in this interval into $\mathtt{snapshot}$ and then run Chain-King Consensus with super-interval expansion and an additional lottery stage at the beginning which we detail below (cf.~\cref{subsec:new-smr-protocol}).
+%
+We omit the details on super-phase expansion and use $itvl$ to denote the super-interval index in a BA invocation.
+
+\input{protocols/state-update}
+
+\paragraph{Synchronization procedure.}
+%
+Parties call $\mathsf{SyncProcedure}$ when their local clock enters the last round in an interval and adjusts their clock by computing \shift based on their local parallel chains.
+%
+Note that the ``retorted'' timestamps are marked explicitly with the next interval index.
+%
+Thus, for each interval, this procedure is called only once.
+
+\input{protocols/sync-procedure}
+
+\paragraph{Finishing a round.}
+%
+Once a party \party has done its actions in a round, \party claims finishing current round by calling $\mathsf{FinishRound}$ and sending \textsc{clock-update} to \funcDriftingClock.
+
+\input{protocols/finish-round}
+
+\paragraph{The joining procedure.}
+%
+Honest yet un-synchronized parties run the $\mathsf{JoiningProcedure}$ to synchronize their internal state (i.e., their local clock and blockchain state).
+%
+Parties run this procedure for constantly many rounds, by passively listen to the protocol execution, bootstrap the blockchain, keep track of the input-block local arrival time, and then adjust their local clock based on these information.
+
+\input{protocols/joining-procedure}

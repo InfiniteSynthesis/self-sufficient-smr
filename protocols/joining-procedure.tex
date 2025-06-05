@@ -1,0 +1,103 @@
+\begin{cccProtocol}
+    {$\mathsf{JoiningProcedure}(\party, \sid)$}
+    {joining-procedure}
+    {The joining procedure for a fresh new party.}
+
+    \begin{algorithmic}[1]
+        \LineComment{Phase A: state-reset}
+        \State{Call $\mathsf{UpdateLocalTime}(\party, \sid)$} \Comment{Align with newest round}
+        \If{$\localTime > \protocolTime{1}{1}$}
+        \State{$\localTime \gets \protocolTime{1}{1}$}
+        \State{$\fetchCompleted \gets \false, \futureChains \gets \emptyset, \inputBlockBuffer \gets \emptyset, \buffer \gets \emptyset$}
+        \State{Set input-block arrival timetable as empty array}
+        \EndIf
+
+        \LineComment{Phase B: chain-convergence}
+        \While{$\localTime < \protocolTime{1}{1} + t_{\mathsf{off}}$}
+        \If{$\fetchCompleted = \false$}
+        \State{Call $\mathsf{FetchInformation}(\party, \sid)$ and denote the fetched chains by $\mathcal{N} = (\chain_1, \ldots , \chain_N)$}
+        \State{Call $\mathsf{UpdateLocalChain}(\parallelChainsLocal, \parallelTreesLocal, \mathcal{N})$ to update \parallelChainsLocal and \parallelTreesLocal}
+        \State{$\fetchCompleted \gets \true$}
+        \State{Call $\mathsf{FinishRound}(\party, \sid)$}
+        \EndIf
+        \State{Call $\mathsf{UpdateLocalTime}(\party, \sid)$ to update \localTime}
+        \EndWhile
+
+        \LineComment{Phase C: input-block gathering}
+        \While{$\localTime < \protocolTime{1}{1} + t_{\mathsf{off}} + t_{\mathsf{gather}}$}
+
+        \If{$\fetchCompleted = \false$}
+
+        \State{Call $\mathsf{FetchInformation}(\party, \sid)$ and denote output by $(\chain_1, \ldots, \chain_N)$, $(\tx_1, \ldots, \tx_k)$}
+        \State{Set $\buffer \gets \buffer \concat (\tx_1, \ldots, \tx_k)$}
+        \State{Set $\futureChains \gets \futureChains \concat (\chain_1, \ldots, \chain_N)$}
+        \State{Call $\mathsf{ProcessInputBlocks}(\party, \sid, \emptyset)$ and mark all arrival time with $\mathsf{temp}$}
+        \State{Call $\mathsf{UpdateLocalChain}(\parallelChainsLocal, \parallelTreesLocal, \futureChains)$ to update \parallelChainsLocal and \parallelTreesLocal}
+
+        \State{Let \parallelChains denotel the paralle chains after pruning \kbootstr blocks on all chains in \parallelChainsLocal}
+        \State{Set $\protocolTime{itvl^*}{\cdot} \gets \med \{ \timestamp{\block} \mathbin| \block~\text{is the tip block of}~\chain \wedge \chain \in \parallelChains \}$}
+
+        \oneLineIf{$\mathtt{snapshot}[itvl^*] = \bot$}{set $\mathtt{snapshot}[itvl^*]$ using \cref{protocol:update-state} Line~\ref*{code:state-update-snapshot-start} to \ref*{code:state-update-snapshot-end}}
+
+        \State{$\fetchCompleted \gets \true$}
+        \State{Call $\mathsf{FinishRound}(\party, \sid)$}
+
+        \EndIf
+
+        \State{Call $\mathsf{UpdateLocalTime}(\party, \sid)$ to update \localTime}
+
+        \EndWhile
+
+        \LineComment{Phase D: synchronization and state-update}
+
+        \State{Set $i$ as the second minimum positive integer s.t. $\mathtt{snapshot}[i] \neq \bot$}
+
+        \While{$\mathtt{snapshot}[i] \neq \bot$}
+        \State{Initialize $\{ \mathtt{clockShift}_j \}_{j \in [m]}$ as an empty vector}
+        \For{$j$ \textbf{from} $1$ \textbf{to} $m$}
+        \State{Set \chain as $j$-th chain in \parallelChainsLocal}
+        \State{$B \gets \{ \block \mathbin| (\block \in \chain) \wedge \mathsf{isStageOG}(\timestamp{\block}) = \true \}$}
+
+        \State{$IB \gets \{\inputBlock \mathbin| (\inputBlock \in \block \in B) \wedge (\timestamp{\inputBlock} = \protocolTime{i}{\cdot}) \}$}
+
+        \LineComment{Find representative beacon and compute recommendation.}
+
+        \For{each $\inputBlock \in IB$}
+
+        \State{Find unique $\inputBlock' \in \inputBlockBuffer$ s.t. $\inputBlock' = \inputBlock$. If inexistent, set $\inputBlock' \gets \bot$.}
+
+        \If{$\inputBlock' \neq \bot$}
+
+        \State{Set $\mathsf{arrivalTime}(\inputBlock) \gets \mathsf{arrivalTime}(\inputBlock')$}
+
+        \State{$\textsf{recom}(\inputBlock, j) \gets \timestamp{\inputBlock} - \mathsf{arrivalTime}(\inputBlock)$}
+        \Else
+        \State{$IB \gets IB \mathbin \backslash \{ \inputBlock \}$}
+        \EndIf
+        \EndFor
+
+        \State{$\mathtt{clockShift}_i \gets \med \{ \textsf{recom}(\inputBlock, j) \mathbin| \inputBlock \in IB \}$}
+        \EndFor
+
+        \LineComment{Compute interval shift using \cref{eq:sync-shift}}
+        \State{$\shift_i \gets \mathsf{avg}(\mathsf{select}(\mathsf{reduce}(\mathtt{clockShift})))$}
+
+        \For{each \inputBlock with $\mathsf{arrivalTime}(\inputBlock) = (a, \mathsf{temp})$}
+        \State{Set $\mathsf{arrivalTime}(\inputBlock) \gets (a + \shift_i, \mathsf{temp})$}
+        \EndFor
+
+        \State{Set $\localTime \gets \localTime + \shift_i$}
+
+        \State{Set $i \gets i + 1$}
+        \EndWhile
+
+        \State{Set $\isSync \gets \true$ and $t_{\mathsf{work}} \gets \localTime - 1$}
+        \State{Run \textsf{UpdateLocalChain} to filter chains with future timestamps}
+
+        \For{each beacon $\inputBlock \in \inputBlockBuffer$ with $\timestamp{\inputBlockBuffer} \le (i + 1) \cdot \syncLen$}
+        \State{Parse $\mathsf{arrivalTime}(\inputBlock)$ as $(a, \mathsf{temp})$ and define $\mathsf{arrivalTime}(\inputBlock) = (a, \mathsf{final})$}
+        \EndFor
+    \end{algorithmic}
+
+    \textsc{Output:} The protocol outputs \ok to its caller (but not to \Z)
+\end{cccProtocol}
