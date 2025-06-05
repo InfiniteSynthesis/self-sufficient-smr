@@ -1,0 +1,198 @@
+\subsection{Preliminary Notations, Definitions and Parameters}
+\label{subsec:preliminary-notations-and-definitions}
+
+Our probability space is over all executions of length at most some polynomial in $\kappa$; we use \Pr to denote the probability measure of this space.
+%
+Furthermore, let \E be a random variable taking values on this space and with a distribution induced by the random coins of all entities (adversary, environment, parties) and the random oracle.
+
+For the sake of convenience, we define a \emph{nominal time} that coincides with the internal variable $\tau_\sid$ in \funcDriftingClock, indicating how many times the functionality ``ticks'' to all registered honest parties.
+
+\begin{definition}[Nominal time]
+    Given an execution of \pSMR, any prefix of the execution can be mapped deterministically to an integer $r$, which we call \emph{nominal time}, as follows: $r$ is the value of variable $\tau$ in the clock functionality at the final step of the execution prefix which is obtained by parsing the prefix from the genesis block and keeping track of the honest party set registered with the clock functionality (bootstrapped with the set of inaugural alert parties).
+    %
+    In case no honest party exists in the execution, $r$ is undefined.
+\end{definition}
+
+Recall that our parallel chain construction binds $m$ independent mining procedures using \mforone PoW, we revisit the analytical frameworks in~\cite{C:GarKiaLeo17,EPRINT:GarKiaLeo20} and re-define all preliminary notations in the new context.
+
+On the $i$-th single chain among $m$ parallel chains, if at a nominal time $r$ exactly $h$ (alert) parties query the oracle with target $T^i$ , the probability of at least one of them will succeed is
+%
+\[ f(T^i, h) = 1 - (1 - p T^i)^h \le p T^i h, ~\text{where}~ p = 1 / 2^{\kappa / m}. \]
+%
+At nominal time $r$, alert parties might be querying the random oracle for various targets.
+%
+We denote by $T^{i, \mathrm{min}}_r$ and $T^{i, \mathrm{max}}_r$ the minimum and maximum of those targets.
+%
+Moreover, the initial target $T_0$ (which is the same for all chains) implies in our model an initial estimate of the number of honest RO queries $h_0$; specifically, $h_0 = 2^{\kappa / m} \varLambda_{\mathsf{epoch}} / (T_0 \epochLen)$, i.e., the number of parties it takes to produce $\varLambda_{\mathsf{epoch}}$ blocks of difficulty $1 / T_0$ in time \epochLen.
+%
+For convenience, we denote $f_0 = f (T_0, h_0)$ and simply refer to it as $f$. %
+%
+Also note that the ideal number of blocks $\varLambda_{\mathsf{epoch}} = \epochLen \cdot f$, so in the analysis we will use $\epochLen \cdot f$ to represent $\varLambda_{\mathsf{epoch}}$.
+
+Recall that our protocol runs in a $(\gamma, s)$-respecting requirement, for the ease of presentation, we introduce another parameter $\lambda$ such that $\lambda + 2 \delay = \epsilon \epochLen / [2 (1 + \delta) \gamma^2]$.
+
+\paragraph{``Good'' properties.}
+%
+we present some definitions which will allow us to introduce a few
+(“good”) properties, serving as an intermediate step towards proving the desired clock properties.
+%
+Note that after switching to the new target recalculation function where blocks are counted to different epochs based on their timestamps, and parties forward epochs based on their local view, the original analytical framework~\cite{C:GarKiaLeo17,EPRINT:GarKiaLeo20} is infeasible to apply.
+%
+Hence, following the treatment in~\cite{TCC:GarKiaShe22}, we make necessary adaptions to consider the \emph{target recalculation zone} --- a sequence of consecutive nominal-time steps where alert parties may enter the next epoch in their local view.
+
+\begin{cccItemize}[noitemsep]
+    \item Nominal-time step $r$ is \emph{good} w.r.t. the $i$-th chain if $f /2\gamma^2 \le p h_r T^{i, \mathrm{min}}_r$ and $p h_r T^{i, \mathrm{max}}_r \le (1 + \delta) \gamma^2 f$.
+
+    \item Nominal-time step $r$ is \emph{good} if for any $i \in [m]$ it holds that $f /2\gamma^2 \le p h_r T^{i, \mathrm{min}}_r$ and $p h_r T^{i, \mathrm{max}}_r \le (1 + \delta) \gamma^2 f$.
+
+    \item A logical round \protocolTime{\interval}{\round} is a \emph{target recalculation point} w.r.t. epoch $ep$ if $(\round = \interval \cdot \syncLen) \wedge [\interval \mod (\epochLen / \syncLen) = 0]$.
+
+    \item A sequence of consecutive nominal-time steps $Z_{ep} = \{ r_u, \ldots, r_v \}$ is a \emph{target recalculation zone} w.r.t. target recalculation epoch $ep$ if $r_u$ ($r_v$ resp.) is the smallest (largest resp.) time step s.t. some subset of synchronized parties are in the logical round that is a target recalculation point w.r.t. $ep - 1$.
+
+    \item A target-recalculation zone $Z_{ep}$ is \emph{good} if for all $h_r, r \in Z_{ep}$ the target $T_{ep}$ satisfies $f / 2\gamma \le p h_r T_{ep} \le (1 + \delta) \gamma f$.
+
+    \item A chain is \emph{good} if all its target recalculation zones are good.
+
+    \item A chain is $\ell$-\emph{stale} for some nominal time $u$ if it does not contain an honest block computed after nominal time $u - \ell - 2\delay$.
+
+    \item The \emph{blocklength} of an epoch $ep$ on $i$-th chain \chain is the number of blocks in \chain with timestamp \protocolTime{itvl}{\cdot} such that $\lceil itvl / (\epochLen / \syncLen) \rceil = ep$.
+\end{cccItemize}
+
+Our goal is to prove that, at a certain nominal time $r$ of the protocol execution, alert parties enjoy good properties on all parallel chains in their local view and reported timestamps.
+%
+Thus, for each chain index $i$ we extract all chains that either belong to alert parties at $r$ or have accumulated sufficient difficulty and thus might be adopted in the future.
+%
+We denote the chain set on $i$-th chain by $\mathcal{S}^i_r$:
+%
+\begin{equation*}
+    \mathcal{S}^i_r \triangleq
+    \left\{
+    \chain \in E_r
+    \left|
+    \begin{aligned}
+         & ``\chain \text{ belongs to an alert party'' or}                                                                           \\
+         & ``\exists \chain'\in E_r \text{ that belongs to an alert party and } \chainDiff{\chain} > \chainDiff{\chain'} \text{ or } \\
+         & ``\exists \chain'\in E_r \text{ that belongs to an alert party and } \chainDiff{\chain} = \chainDiff{\chain'}             \\
+         & \qquad \qquad \qquad \text{ and \chainHead{\chain} was computed no later than \chainHead{\chain'}}
+    \end{aligned}
+    \right.
+    \right\}.
+\end{equation*}
+
+
+Next, we define a series of useful predicates with respect to the potential chain set $\mathcal{S}_r$ and parties' local clocks at nominal time $r$.
+%
+For a nominal-time step $r$, let:
+%
+\begin{cccItemize}[noitemsep]
+    \item $\textsc{GoodChains}(r) \triangleq$ ``For all $u \le r$ and $i \in [m]$, every chain in $\mathcal{S}^i_u$ is good.''
+
+    \item $\textsc{GoodTimesteps}(r) \triangleq$ ``All time steps $u \le r$ are good.''
+
+    \item $\textsc{NoStaleChains}(\lambda, r) \triangleq$ ``For all $u \le r$ and $i \in [m]$, there is no $\lambda$-stale chains in $\mathcal{S}^i_u$.''
+
+    \item $\textsc{NoStaleChains}^\ast(\ell, i, r) \triangleq$ ``There is no $\ell$-stale chains in $\mathcal{S}^i_r$.''
+
+    \item $\textsc{BlockLength}(r) \triangleq$ ``For all $u \le r$ and $i \in [m]$, for all chain $\chain \in \mathcal{S}^i_u$ the blocklength $\varLambda$ of any epoch $ep$ in \chain satisfies $\frac{1}{2(1 + \delta) \gamma^2} \cdot \epochLen f \le \varLambda \le 2(1 + \delta) \gamma^2 \cdot \epochLen f$.''
+
+    \item $\textsc{GoodSkew}(r) \triangleq$ ``For all alert parties in nominal time $r$, their local time differs by at most \maxSkew if they are in the same interval.''
+\end{cccItemize}
+
+\paragraph{Random variables and \delay-isolated success.}
+%
+For the purpose of estimating the difficulty acquired by alert parties during a time window on each chain, we define the following random variables w.r.t. nominal time $r$ and chain index $i$.
+%
+\begin{cccItemize}[noitemsep]
+    \item $D^i_r$: the sum of the difficulties of all blocks computed by alert parties at nominal time $r$ on the $i$-th chain.
+
+    \item $Y^i_r$: the maximum difficulty of all blocks computed by alert parties at nominal time $r$ on the $i$-th chain.
+
+    \item $Q^i_r$: equal to $Y^i_r$ when $D^i_u = 0$ for all $r < u < r + \delay$ and 0 otherwise.
+\end{cccItemize}
+%
+We call a nominal time $r$ such that $D^i_r > 0$ \emph{successful} w.r.t. the $i$-th chain and one wherein $Q_r > 0$ \emph{isolated successful} w.r.t. the $i$-th chain.
+%
+An isolated successful time step guarantees the irreversible progress of the honest parties on the corresponding chain (except for honest parties in different stages, see~\cref{subsec:chain-growth-lemma}).
+%
+We also note that isolated success is defined by not having any honest success in the future \delay nominal time steps, which is justified by our new timestamp scheme presented in~\cref{subsec:new-parallel-blockchain}.
+
+Recall that the total number of hash queries alert parties (resp., the adversary) can make at nominal time $r$ is denoted by $h_r$ (resp., $t_r$).
+%
+For a sequence of time steps $S$ we write $h(S) = \sum_{r \in S} h_r$ and similarly $t(S)$, $D^i(S)$, $Q^i(S)$ where the superscript indicates the corresponding chain index.
+
+Regarding the adversary \adv, while \adv may query the random oracle for an arbitrarily low target and obtain blocks with arbitrarily high difficulty, we wish to upper-bound the difficulty it can accrue during a set of $J$ queries.
+%
+Consider, with respect to the $i$-th chain, a set of consecutive adversarial queries $J$ and associate it with the target of the first query and denote it by $T^i(J)$.
+%
+We define $A^i(J)$ and $B^i(J)$ to be equal to the sum of the difficulties of all blocks computed by the adversary on chain $i$ during queries in $J$ for target at least $T^i(J) / \tau$ and $T^i(J)$, respectively.
+%
+That is, queries in $J$ for targets less than $T^i(J) / \tau$ (resp. $T^i (J)$) do not contribute to $A^i (J)$ (resp. $B^i (J)$).
+%
+While considering consecutive epochs of a particular chain, the target can either increase by at most $\tau$ (and $B^i (J)$ will be appropriate), or decrease by at most $\tau$ (and $A^i (J)$ will be useful).
+
+Let $\E_{r - 1}$ fix the execution just before time $r$.
+%
+In particular, a value $E_{r - 1}$ of $\E_{r - 1}$ determines the adversarial strategy and so determines the targets against which every party will query the oracle at time $r$ and the number of parties $h_r$ and $t_r$ , but it does not determine $D_r$ or $Q_r$.
+%
+For an adversarial query $j$ we will write $E_{j - 1}$ for the execution just before this query.
+
+\begin{fact}
+    [\cite{EPRINT:GarKiaLeo20}]
+    \label{fact:respecting-env-inequalities}
+
+    Let $U$ be a set of at most $s$ consecutive time steps in a $(\gamma, s)$-respecting environment and $S \subseteq U$.
+    %
+    \begin{enumerate}[label=(\alph*),leftmargin=*,nosep]
+        \item For any $h \in \{h_r : r \in U \}$, $\frac{h}{\gamma} \le \frac{h(S)}{|S|} \le \gamma h$.
+
+        \item $h(U) \le \big(1 + \frac{\gamma |U \backslash S|}{|S|} \big) h(S)$.
+    \end{enumerate}
+\end{fact}
+
+\paragraph{Protocol parameters and their conditions.}
+%
+We summary all \pSMR parameters in~\cref{table:main-parameters-protocol} in~\cref{sec:glossray}.
+%
+Especially, in our analysis we consider a consecutive set of $\ell$ time steps where $\ell$ is set as a constant and holds the following relation with other protocol parameters (which are also constants in our analysis).
+%
+\begin{equation} \label{eq:ell-definition}
+    \ell = \mathsf{\Theta} \bigg( \frac{4(1 + 5\epsilon)}{\epsilon^2 f [1 - (1 + \delta) \gamma^2 f]^{\delay + 1}} \cdot \gamma^3 \cdot \max \{ \delay, \tau \} \bigg)
+\end{equation}
+%
+Next, we consider intervals and epochs with durations that are set relatively large with respect to $\ell$.
+%
+Regarding the duration of an interval and three stages \textsf{VC}, \textsf{OG} and \textsf{RC} inside, they are all constant parameters independent of the security parameter and we require that
+%
+\begin{equation} \label{eq:sync-duration}
+    \syncLen_{\mathsf{VC}} = \syncLen_{\mathsf{RC}} \ge 2(\ell + 2 \delay)
+    ~\mathrm{and}~
+    \syncLen_{\mathsf{OG}} = (\frac{\gamma}{\epsilon} - 4) \cdot (\ell + 2\delay)
+    ~\mathrm{and}~
+    \syncLen \ge \frac{\gamma}{\epsilon} \cdot (\ell + 2\delay).
+\end{equation}
+%
+We also require that an epoch consists of poly-logarithmically many intervals $ \epochLen = \bigTheta(\syncLen \log^2 \kappa)$.
+
+We assume the following conditions on protocol parameters to be satisfied:
+%
+First, the advantage of the honest parties $\delta$ is large enough to absorb error from the convergence quality $\epsilon$.
+%
+Specifically,
+%
+\begin{equation} \tag{C1} \label{condition:error}
+    \epsilon \le \delta / 24 \le 1 / 24.
+\end{equation}
+%
+Next, network delay \delay, party fluctuation ratio $\gamma$ are well set with respect to $\epsilon$.
+%
+\begin{equation} \tag{C2} \label{condition:mining-rate}
+    [1 - (1 + \delta)\gamma^2 f]^\delay \ge 1 - \epsilon.
+\end{equation}
+%
+We also require that the bound on clock drift rate \clockDrift is set relatively small.
+%
+\begin{equation} \tag{C3} \label{condition:clock-drift}
+    \clockDrift < \frac{f}{8 \gamma^4} \cdot \epsilon^2(1 - \epsilon)^2.
+\end{equation}
+%
+Note that, the clock drift \maxSkew and interval duration \syncLen also gives us the maximum skew that parties may deviate in an interval with initial skew \initSkew, and we write $2 \clockDrift \syncLen + (2 + \frac{1}{1 + \clockDrift}) \cdot \delay = \initSkew / 2 = \maxSkew / 3$.

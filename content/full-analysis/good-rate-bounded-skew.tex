@@ -1,0 +1,300 @@
+\subsection{Steady Block Generation Rate and Bounded Skews}
+
+All statements in this section assume a $(\gamma, s)$-respecting environment, and the Conditions are assumed to hold for the initialization parameters $n_0$ and $T_0$.
+
+We first prove that long forks appears on only a bounded number of parallel chains.
+
+\begin{lemma} \label{lemma:no-short-stale-chains}
+    Assuming $\textsc{GoodTimesteps}(r - 1)$, for any $i \in [m]$, $\textsc{NoStaleChains}^\ast(\ell, i, r - 1)$ holds except with probability no more than $\epsilon_{\mathsf{conv}}(\ell)$.
+\end{lemma}
+
+\begin{proof}
+    Recall \cref{lemma:good-conv-single-chain} where $\mathsf{goodConv}^i(r)$ holds with probability no more than $\epsilon_{\mathsf{conv}}(\ell)$, it suffices to show that when $\mathsf{goodConv}^i(r)$ holds, $\mathcal{S}^i_r$ contains no stale chains with probability $1$.
+
+    Suppose $\mathsf{goodConv}^i(r)$ holds and, towards a contradiction, $\chain \in \mathcal{S}^i_r$ and has not been extended by an honest party for at least $\ell + 2\delay$ time steps and $r$ is the least (nominal) time with this property.
+    %
+    Let \block be the last honestly-generated block of \chain (possibly the genesis) and let $w$ be the (nominal) time it was computed.
+    %
+    We consider $S = \{ u : w + \delay \le u \le r - \delay \}$ and $U = \{u : w \le u \le r\}$ ($|S| \ge \ell$ by assumption).
+    %
+    Suppose that the blocks of \chain after \block (we denote these blocks by $B$) span $k$ epochs.
+    %
+    For $i \in [k]$ let $m_i$ be the number of blocks in epoch $i$.
+    %
+    We denote the target in the $i$-th epoch with $T_i$ and set $M = m_1 + \ldots + m_k$  and $d = \sum_{i \in [k]} T_i$.
+    %
+    Our plan is to contradict the assumption that $\chain \in \mathcal{S}^i_r$ by showing that all chains in $\mathcal{S}^i_r$ have more difficulty than \chain.
+    %
+    By Averaged Chain-Growth \cref{lemma:averaged-chain-growth}, all the honest parties have advanced (in difficulty) during the time steps in $U$ by $Q^{\mathrm{avg}}(S)$.
+    %
+    Therefore, to reach a contradiction it suffices to show that $d < Q^{\mathrm{avg}}(S)$.
+
+    Consider the following partition on $B$: we partition $B$ into $u$ sections $B_v, v \in [u]$ and associate each section $B_v$ with the target of its first block $T_v$.
+    %
+    Section $B_v$ starts with either the block after \block (if $v = 1$) or the $\lceil m_i / 2 \rceil$-th block in an epoch (if $v > 1$); it ends at either the last block of the chain (if $v = u$) or the $(\lceil m_i / 2 \rceil + 1)$-th block such that in epoch $i + 1$ the target is less than $T_v / \tau$.
+    %
+    Under such partition, the next block after partition $B_v$ is exactly the first block of partition $B_{v + 1}$.
+
+    For $u \ge 2$, we claim that for partition $B_v$, it has the following properties: (1) for all blocks in $B_v$, their target is at least $T_v / \tau$; and (2) the number of blocks in $B_v$ is at least $\epochLen f / 2$.
+    %
+    Property (1) holds because of the strategy of our partition that will stop before it exceeds the lower bound for the targets and thanks to~\cref{eq:target-recalc} we need to pass at least two boundaries of epochs so the circumstance that no blocks exist in such partition will never happen.
+    %
+    To reason why property (2) stands, consider those epochs that are split into two different sections.
+    %
+    For an epoch $ep$ whose blocks are split into two sections $B_v, B_{v + 1}$, since in epoch $ep + 1$ the target is larger than that in $ep$ (if not, it does not satisfy the criteria of the partition), there are at least $\epochLen f$ blocks in epoch $ep$.
+    %
+    Otherwise, \cref{eq:target-recalc} will raise the target.
+    %
+    By the rule of partition, at least $\epochLen f / 2$ blocks are in each sections.
+    %
+    Hence for every partition, either its head or tail has at least $\epochLen f / 2$ blocks in the same epoch, and this implies the lower bound of the total number of blocks.
+
+    For each $v \in [u]$, let $j_v \in J$ denote the index of the query during which the first block of the $v$-th section was computed and set $J_v = \{j : j_v \le j < j_{i+1} \}$ (\cref{thm:no-bad-ro-events}) assures $j_i < j_{i + 1}$.
+    %
+    We have
+    %
+    \[ d = \sum_{i \in [k]} T_i < \sum_{v \in [u]} (1 + \epsilon) |J_v| \le (1 + \epsilon) |J| \le Q^{\mathrm{avg}}(S). \]
+    %
+    The first inequality holds because by setting $k = \lambda$ and due to~\cref{lemma:random-variable-bounds}(b) we get either $A(J) < (1 + \epsilon) p |J|$ or $T(J) A(J) \le \syncLen f / [2(1 + \delta) \gamma^3]$ with overwhelming probability (and note that $\syncLen f / [2(1 + \delta) \gamma^3] \le \syncLen f / 2$).
+    %
+    The last inequality is due to~\cref{lemma:random-variable-bounds}(a).
+
+    If $u = 1$, let $J$ denote the queries in $U$ starting from the first adversarial query attempting to extend \block.
+    %
+    Then, $T_1 = T(J)$ and $T_2 \ge T(J) / \tau$ thus $d < A(J)$.
+    %
+    If $A(J) < (1 + \epsilon) p |J|$, then $A(J) < Q^{\mathrm{avg}}(S)$ is obtained by~\cref{lemma:random-variable-bounds}(a).
+    %
+    Otherwise, first observe that $pn(S) \ge p T_w h_w |S| / (\gamma T_w) \ge f |S| / (2\gamma^3 T_w)$; by considering the first $\min \{k, \lambda \}$ time steps, it holds that
+    %
+    \[ Q^{\mathrm{avg}}(S) \ge (1 - \epsilon)^2(1 - (1 + \delta) \gamma^2 f)^\delay \cdot \frac{f |S|}{2\gamma^3 T_w} > A(J). \]
+    %
+    The last inequality holds because we apply \cref{lemma:random-variable-bounds}(b) by setting $k = |S|$.
+\end{proof}
+
+Note that, when \cref{lemma:no-short-stale-chains} holds for a chain $i$ throughout an interval, it implies that by pruning $\kbootstr$ blocks from each honest party's local chain $i$ we achieve common prefix~\cite{EC:GarKiaLeo15}.
+%
+Due to the similar argument in~\cite{EPRINT:GarKiaLeo20} we set $\kbootstr = 2 \ell f$.
+
+Additionally, if we replace $\ell$ in \cref{lemma:no-short-stale-chains} with any integer larger than $\lambda = \bigTheta(\log^2 \kappa)$, we get the following corollary.
+%
+Note that now $\epsilon_{\mathsf{conv}}(\lambda)$ is negligibly small in the security parameter hence no $\lambda$-stale chains holds throughout the execution.
+
+\begin{corollary} \label{corollary:no-long-stale-chains}
+    $\textsc{GoodTimesteps}(r - 1) \implies \textsc{NoStaleChains}(\lambda, r)$.
+\end{corollary}
+
+The two lemmas below shows that by adopting the target recalculation function in~\cref{eq:target-recalc} independently on each chain, they all maintain good block length in each epoch and good block generation rate in each target recalculation zone.
+%
+Note that these the proof of these two lemmas (on each chain) can be viewed as a reminiscent of the proofs in~\cite{TCC:GarKiaShe22} where they use the same function to adjust mining difficulty on a single chain, hence we omit them and refer to~\cite{TCC:GarKiaShe22} for more details.
+
+\begin{lemma} \label{lemma:good-block-length}
+    $\textsc{GoodTimesteps}(r - 1) \wedge \textsc{GoodChains}(r - 1) \wedge \textsc{GoodSkew}(r - 1) \implies \textsc{BlockLength}(r)$.
+\end{lemma}
+
+\begin{lemma} \label{lemma:good-chains}
+    $\textsc{GoodTimesteps}(r - 1) \implies \textsc{GoodChains}(r)$.
+\end{lemma}
+
+Given that parties maintain good block generation rates in each target recalculation zone and the fact that $s \ge (1 + \clockDrift) \syncLen$, we show that good block generation rate is maintained throughout the execution.
+
+\begin{corollary}
+    $\textsc{GoodTimesteps}(r - 1) \implies \textsc{GoodTimesteps}(r)$.
+\end{corollary}
+
+\begin{proof}
+    Consider any $i \in [m]$ thus any chain $\chain \in \mathcal{S}^i_r$.
+    %
+    Let $Z_{ep}$ be its last target recalculation zone before $r$.
+    %
+    If $r \in Z_{ep}$, it follows directly by~\cref{lemma:good-chains} that it is good.
+    %
+    Otherwise, consider a time $w \in Z_{ep}$ (recall that $f /2\gamma \le p h_w T_{ep} \le (1 + \delta) \gamma f$).
+    %
+    Since the duration of an epoch implies $r - w < s$, we have $h_r / \gamma \le h_w \le \gamma h_r$.
+    %
+    Combining these two bounds we obtain the desired inequality.
+\end{proof}
+
+Given that long forks could only happen in a bounded fraction of parallel chains, we then show that for any honest party, their view of current interval contains sufficiently many chains with two good properties at the end of an interval --- first, parties share a common view on that chain, and second the majority of input blocks included in that chain are generated by honest parties.
+%
+Also note that we can parameterize our protocol to make $\eta$ an arbitrarily small constant.
+
+\begin{theorem} \label{thm:interval-oblivious-agreement}
+    Let \parallelChains and $\parallelChains'$ denote the parallel chains held by two honest parties \party and $\party'$ at the end of an interval $itvl$, respectively.
+    %
+    There exists a subset $S \subseteq \{1, 2, \ldots, m \}$, $|S| > m - \eta$, such that for all $i \in S$, the following properties hold on chains $\chain = \parallelChains_i$ and $\chain' = \parallelChains'_i$:
+    %
+    \begin{cccItemize}[nosep]
+        \item \emph{\bf Agreement}: $\chainPrefixUB{\chain}{\syncLen \cdot itvl - \syncLen_{\mathsf{RC}}} = \chainPrefixUB{\chain'}{\syncLen \cdot itvl - \syncLen_{\mathsf{RC}}}$.
+
+        \item \emph{\bf Honest input-block majority}: More than half of the PoW transactions included in $\chainPrefixUB{\chain}{\syncLen \cdot itvl - \syncLen_{\mathsf{RC}}}$ and $\chainPrefixUB{\chain'}{\syncLen \cdot itvl - \syncLen_{\mathsf{RC}}}$ are produced by honest parties.
+    \end{cccItemize}
+\end{theorem}
+
+\begin{proof}
+    Recall \cref{corollary:conv-interval-length} and \cref{lemma:no-short-stale-chains}, agreement holds due to the fact that $\textsc{NoStaleChains}^\ast(\ell,\allowbreak i, r)$ holds for any $i \in S$ and time $r$ that parties stay in interval $itvl$.
+
+    We now prove that honestly generated input blocks that are included on chain account for the majority.
+    %
+    Let $u$ denote the first (nominal) time such that all alert parties are mining input blocks w.r.t. interval $itvl$.
+    %
+    Consider a set of consecutive nominal time steps $S = \{i : u \le i \le v \}$ where where all the honest queries in $S$ are doing 2-for-1 PoW w.r.t. interval $itvl$ and hence contribute to the honest beacon set.
+    %
+    Let \block be the last block produced by honest parties before time $v$ and denote its production time by $w$ (in terms of the nominal time index).
+    %
+    Since \chain will become stale if there is no honest block since $w$ for $\ell + 2\delay$ time steps, we get that $w < v - (\ell + 2\delay)$.
+
+    Let $S_1 = \{i : u \le i \le w - \delay \}$ and $S_2 = \{i : u - (2\ell + 4\delay ) \le i \le w + (\ell + 2\delay)\}$.
+    %
+    $S_1$ is the time interval that honest success can contribute to the beacon set w.r.t. interval $itvl$; and $S_2$ is for the adversary.
+    %
+    The earliest time step of $S_1$ is derived from the definition of $u$ and the largest time is because it will take up to \delay time steps for all beacons to be diffused to and accepted by all alert parties.
+    %
+    The earliest time step of $S_2$ is acquired due to the unpredictability of an honest block (cf.~\cref{lemma:no-short-stale-chains}).
+    %
+    Regarding the largest time step of $S_2$, it is achieved by considering the first honest block $\block'$ after $v$, which is produced no later than $w' = w + \ell + 2\delay$ (otherwise it violates ``no stale chains'').
+    %
+    The adversary can no longer include beacons to the output generation stage after $w'$ as it can no longer revert $\block'$ before the end of the interval, so all the subsequent beacons produced after $w'$ are invalid w.r.t. the current chain.
+    %
+    Note that $|S_1| \ge [\syncLen - (5\ell + 11 \delay)] / (1 + \clockDrift)$ and $|S_2 \backslash S_1| \le (1 + \clockDrift)(3\ell + 7 \delay)$.
+
+    Let $J$ denote the adversarial queries associated with $S_2$.
+    %
+    In order to prove that alert parties can produce at least half of synchronization beacons, it suffices to show that
+    %
+    \[ D(S_1) > d / 2. \]
+
+    We first show that the number of RO queries alert parties can make during $S_2$ is at most $10\epsilon$ more than those in $S_1$.
+    %
+    We have
+    %
+    \[ h(S_2) \le \bigg( 1 + \frac{\gamma |S_2 \backslash S_1|}{S_1} \bigg) h(S_1) \le \bigg( 1 + \frac{\gamma (1 + \clockDrift)^2 (3\ell + 7\delay)}{\syncLen - (5\ell + 11 \delay)} \bigg) \le \bigg( 1 + \frac{4(1 + \epsilon) \epsilon }{1 - 6 \epsilon / \gamma}\bigg) < (1 + 10\epsilon)h(S_1). \]
+    %
+    The first inequality follows from~\cref{fact:respecting-env-inequalities}(b); the third one holds due to~\cref{eq:sync-duration} and Condition~\eqref{condition:error}; and the last one is by Condition~\eqref{condition:error} ($\epsilon < 1 /12$).
+    %
+    Next,
+    %
+    \begin{align*}
+        D(S_1) \ge (1 - \epsilon) ph(S_1) & > (1 - 11 \epsilon) ph(S_2) > \frac{1 - 11 \epsilon}{2 - \delta} p [h(S_2) + |J|]               \\
+                                          & > \frac{1 - 12\epsilon}{2 - \delta}[D(S_2) + A(J)] > \frac{1}{2} [D(S_1) + A(J)] = \frac{d}{2}.
+    \end{align*}
+    %
+    The first inequality follows \cref{thm:honest-convergence-prob}; the second one is achieved by substituting $h(S1)$ with $h(S2)$; the next inequality follows from the honest majority assumption; the last inequality holds due to Condition~\eqref{condition:error} $(\delta \ge 24\epsilon)$.
+\end{proof}
+
+\paragraph{Bounded skews.}
+%
+We now show that the synchronization procedure run at the end of each interval helps parties tighten their clock skews and stay in a good linear envelope with respect to real time.
+
+\begin{lemma} \label{lemma:good-skew}
+    $\textsc{GoodSkew}(r - 1) \wedge \textsc{GoodChains}(r - 1) \implies \textsc{GoodSkew}(r)$.
+\end{lemma}
+
+\begin{proof}
+    For nominal-time steps that all alert parties stay in the first interval, their local clock can differ with each other for up to $(1 + \clockDrift) \syncLen - (1 + \clockDrift)^{-1} \syncLen + \initSkew \le 2 \clockDrift \syncLen + \initSkew \le \maxSkew$ time steps in that no clock synchronization happened.
+
+    Next, suppose that honest local clocks deviate from each other for at most \maxSkew in interval $itvl$.
+    %
+    We consider the nominal time $r$ such that at least one alert party enters the next interval $itvl + 1$.
+    %
+    We show that for those parties that have finished adjusting their clock, the logical time that they report can deviate from each other for up to \maxSkew.
+
+    Let $\shift_i$ denote the the shift computed by a party \party on its $i$-th chain at the end of interval $itvl$.
+    %
+    We first show that if good properties holds on chain $j$, then all honest parties (if they adjust time based on chain $j$) will adjust their clock back to $\initSkew / 2$ after they enter interval $itvl + 1$.
+    %
+    Consider the first nominal time step such that at least one honest party enters interval $itvl + 1$.
+    %
+    Let $\mu$ denote the timestamp of \party after adding the adjusted shift computed from~\cref{eq:sync-shift} to its local time in interval $itvl$; and let $(\mu_1, \ldots, \mu_m)$ denote the set of timestamps held by a party \party acquired by adding $(\shift_1, \ldots, \shift_m)$ to its local time respectively.
+    %
+    Consider the following claim.
+
+    \begin{claim}
+        For any two honest parties \party and $\party'$, there exist a set $S \subseteq [m]$ with $|S| \ge m - \eta$ such that for any $k \in S$, we have $|\mu_k - \mu'_k | \le \initSkew / 2$.
+    \end{claim}
+
+    \begin{proof}
+        Fix $i \in S$ such that on the $i$-th chain,  $\parallelChains^{itvl, \party}_i = \parallelChains^{itvl, \party'}_i$ and the majority of the input-blocks in $\parallelChains^{itvl, \party}_i$ are produced by honest parties.
+        %
+        I.e., honest parties share a unanimous view of the input-block set $IB$.
+        %
+        For each $\inputBlock \in IB$, let $\mu_i(\inputBlock)$ denote the time after using beacon \inputBlock to update local time; we have $\mu_i(\inputBlock) = \round_i + \timestamp{\inputBlock} - \party.\mathsf{arrivalTime}(\inputBlock)$.
+        %
+        We are going to show that for any two honest parties \party and $\party'$, $|\mu_i(\inputBlock) - \mu'_i(\inputBlock)| \le \initSkew - (1 + \clockDrift) \delay$.
+
+        Notice that the arrival time of \inputBlock in the view of party \party can be represented as
+        %
+        \[ \party.\mathsf{arrivalTime}(\inputBlock) = \round_i - \clockDrift^\party(r - r_\inputBlock) + \delay_{\party, \inputBlock}, \]
+        %
+        where $r_\inputBlock$ is the nominal time that \inputBlock is emitted to the network if \inputBlock is honest, and is the first nominal time step such that at least one honest party receives \inputBlock if \inputBlock is adversarial.
+        %
+        And $\clockDrift^\party$ is the clock speed of party \party during nominal time $r$ and $r_\inputBlock$.
+        %
+        The quantity $\delay_{\party, \inputBlock} \in [\delay]$ is the time elapsed (counted by nominal-time steps) for \inputBlock to be delivered to \party.
+        %
+        By substituting we get
+        %
+        \begin{equation*}
+            \mu_i(\inputBlock) = \timestamp{\inputBlock} + \clockDrift^\party(r - r_\inputBlock) - \delay_{\party, \inputBlock}.
+        \end{equation*}
+        %
+        Note that for different parties, $|\mu_i(\inputBlock) - \mu'_i(\inputBlock)| \le 2 \clockDrift \syncLen + (1 + \clockDrift) \delay$.
+
+        Now consider the tuples $(\mu_i(\inputBlock))_{\inputBlock \in IB}$ and $(\mu'_i(\inputBlock))_{\inputBlock \in IB}$.
+        %
+        By applying \cref{fact:seq-med} and Condition~\eqref{condition:clock-drift}, we get
+        %
+        \[ \bigg| \med \Big((\mu_i(\inputBlock))_{\inputBlock \in IB} \Big) - \med \Big((\mu'_i(\inputBlock))_{\inputBlock \in IB} \Big) \bigg| \le 2 \clockDrift \syncLen + (1 +  \clockDrift) \delay \le \initSkew / 2. \]
+
+        The similar argument works for any $i \in S$ which concludes the proof.
+    \end{proof}
+
+    Now for each party \party we construct a new array $(\hat{\mu}_1, \ldots \hat{\mu}_m)$ such that if $i \in S$, $\hat{\mu}_i = \max_{\party \in \mathcal{H}} \mu^\party_i \qquad$ is the maximum of $\mu_i$ among all honest parties; and $\hat{\mu}_i = \mu_i$ otherwise.
+    %
+    $\hat{\mu}_i$ shares a subset of size at least $m - \eta$.
+    %
+    Hence, the following inequality holds for any (possibly the same) $\party_1, \ldots, \party_k \in \honestPartySet$.
+    %
+    \[ \min \hat{\mu} \le \hat{\mu}^{\party_1}_{\eta + 1} \le \hat{\mu}^{\party_2}_{2\eta + 1} \le \ldots \le \hat{\mu}^{\party_k}_{m - \eta} \le \max \hat{\mu}. \]
+
+    Notice that the shift calculation algorithm can be re-written by first compute the time after adding the shifts on each chain, and then apply the array operations, we have
+    %
+    \begin{equation*}
+        \mu \triangleq \mathsf{avg}(\mathsf{select} (\mathsf{reduce} ( \{ \mu_i \}_{i \in [m]}, \eta ), \eta ))
+        ~\text{and}~
+        \hat{\mu} \triangleq \mathsf{avg}(\mathsf{select} (\mathsf{reduce} ( \{ \hat{\mu}_i \}_{i \in [m]}, \eta ), \eta )).
+    \end{equation*}
+    %
+    When $m \ge 5\eta$, it holds that for any two parties \party and $\party'$, $|\hat{\mu} - \hat{\mu}'| < (1 / 3) (\max \hat{\mu}_{m - \eta} - \min \hat{\mu}'_{\eta + 1}) = \initSkew / 2$.
+    %
+    Also notice that for a party \party, $\mu \ge \hat{\mu} \ge \mu - \initSkew / 2$.
+    %
+    Combining them together we get for any two parties \party and $\party'$, $|\mu - \mu'| < \initSkew$.
+\end{proof}
+
+\begin{lemma} \label{lemma:good-accuracy}
+    $\textsc{GoodSkew}(r) \implies$ for any alert party \party and its local time \round, it holds that $\frac{1}{1 + \varGamma} \cdot r \le \round \le (1 + \varGamma) \cdot r$ for $\varGamma = \clockDrift + \epsilon$.
+\end{lemma}
+
+\begin{proof}
+    Consider two ``virtual'' parties $\party^{\mathsf{virt}}_{\mathsf{fast}}$ and  $\party^{\mathsf{virt}}_{\mathsf{slow}}$.
+    %
+    They are parties that passively listen to the protocol execution and update their logical clock, yet they do not perform any mining operations (thus an execution with virtual parties is indistinguishable from another one without them).
+
+    Fix an interval $i$ and let $\party^{\mathsf{virt}}_{\mathsf{fast}}$ start the interval at the same time as the first alert party enters this interval, and her clock always runs at rate $1 + \clockDrift$ (i.e., the fastest speed); and $\party^{\mathsf{virt}}_{\mathsf{slow}}$ starts the $i$-th interval with the last alert party that enters this interval, and her clock always runs at rate $(1 + \clockDrift)^{-1}$ (the slowest speed).
+
+    Let $\{ \chain_j \}_{j \in S} (S \subseteq [m])$ denote the chains where parties share the common view and acquires majority of input blocks at the end of interval $i$.
+    %
+    For any chain $\chain_j$ and any honestly generated beacon $\inputBlock \in \chain_j$, the following holds due to the honest majority of input blocks and the fact that $\party^{\mathsf{virt}}_{\mathsf{fast}}$ ($\party^{\mathsf{virt}}_{\mathsf{slow}}$ resp.) maintains the largest (smallest resp.) local time throughout the interval.
+    %
+    \begin{equation*}
+        - \delay \le \med\{ \timestamp{\inputBlock} - \mathsf{arrivalTime}_{\party^{\mathsf{virt}}_{\mathsf{slow}}}(\inputBlock) \}
+        ~\mathrm{and}~
+        \med\{ \timestamp{\inputBlock} - \mathsf{arrivalTime}_{\party^{\mathsf{virt}}_{\mathsf{fast}}}(\inputBlock) \} \le 0
+    \end{equation*}
+    %
+    Recall \cref{eq:sync-shift}, we have $ - \delay \le \shift_{\party^{\mathsf{virt}}_{\mathsf{slow}}}$ and $\shift_{\party^{\mathsf{virt}}_{\mathsf{fast}}} \le 0$.
+    %
+    Thus, for any party $\party \in \honestPartySet$ at the end of interval $i$, their local clock stays in the $\varGamma$-linear envelope where $\varGamma = \clockDrift + (\delay / \syncLen) \le \clockDrift + \epsilon$.
+\end{proof}

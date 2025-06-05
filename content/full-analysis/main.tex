@@ -1,0 +1,57 @@
+\section{Full Protocol Analysis}
+\label{sec:full-protocol-analysis}
+
+\paragraph{Concentration bounds.}
+%
+In our analysis we apply a variety of large deviation bounds, assuming finite probability spaces and random variables with finite means.
+
+\begin{theorem}[Chernoff bounds] \label{thm:chernoff-bounds}
+    Suppose $\{X_i: i \in [n]\}$ are mutually independent Boolean random variables, with $\Pr[X_i = 1] = p$, for all $i \in [n]$. Let $X =\sum^n_{i = 1} X_i$ and $\mu = pn$.
+    %
+    Then, for any $\delta \in (0, 1]$, it holds that
+    %
+    \[ \Pr [X \le (1 - \delta) \mu] \le e^{- \delta^2 \mu / 2} ~\text{and}~ \Pr [X \ge (1 + \delta) \mu] \le e^{- \delta^2 \mu / 3}. \]
+    %
+    Also, for all $t > 0$,
+    %
+    \[ \Pr[X \ge \mu + t] \le e^{-2 t^2 n}. \]
+\end{theorem}
+
+\begin{definition} \label{def:martingale-sequence}
+    \emph{\cite[Definition 5.3]{DubPan09}}
+    A sequence of random variables $(X_0, X_1, \ldots)$ is a martingale with respect to the sequence $(Y_0, Y_1, \ldots)$, if, for all $n \ge 0$, $X_n$ is determined by $Y_0, \ldots , Y_n$ and $\EX [X_{n+1} \mathbin| Y_0, \ldots , Y_n] = X_n$.
+\end{definition}
+
+\begin{theorem} \label{thm:martingale-bound}
+    \emph{\cite[Theorem 3.15]{McDiarmid98}}
+    Let $(X_0, X_1, \ldots)$ be a martingale with respect to the sequence  $(Y_0, Y_1, \ldots)$. Suppose an event $G$ implies
+    %
+    \[ X_k - X_{k - 1} \le b \text{ (for all $k$) and } V = \sum_k \Var [X_k - X_{k - 1} \mathbin| Y_1, \ldots, Y_{k - 1}] \le v. \]
+    %
+    Then, for non-negative $n$ and $t$,
+    %
+    \[ \Pr [X_n \ge X_0 + t \wedge G] \le \exp \Big\{ - \frac{t^2}{2v + 2bt / 3} \Big\}. \]
+\end{theorem}
+
+\paragraph{Other useful inequalities.}
+%
+Our analysis also employs the following inequalities.
+
+\begin{fact} \label{fact:geometric-series-limit}
+    When $|r| \le 1$, $\lim_{k = 0}^\infty a r^k = a / (1 - r)$.
+\end{fact}
+
+\begin{fact} \label{fact:seq-med}
+    \emph{\cite{EC:BGKRZ21}}
+    %
+    Let $(a_i)^n_{i = 1}$ and $(b_i)^n_{i = 1}$ be two sequences of $n$ integers
+    each, with the property that $\forall i \in [n], |a_i - b_i| \le \varPhi$.
+    %
+    Then we have $| \med((a_i)^n_{i = 1}) - \med((a_i)^n_{i = 1})| \le \varPhi$.
+\end{fact}
+
+\input{content/full-analysis/preliminary-notations}
+\input{content/full-analysis/execution-properties}
+\input{content/full-analysis/chain-growth}
+\input{content/full-analysis/good-rate-bounded-skew}
+\input{content/full-analysis/state-machine-replication}

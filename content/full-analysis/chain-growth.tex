@@ -1,0 +1,133 @@
+\subsection{Averaged Chain Growth Lemma}
+\label{subsec:chain-growth-lemma}
+
+We consider in this section the Chain Growth lemma, which provides a lower bound on the progression of accumulated difficulty of the honest parties that holds irrespective of the adversary.
+%
+Note that this lemma has been proved in various settings:
+%
+In~\cite{EPRINT:GarKiaLeo14} with fixed number of parties and synchronous network; in~\cite{C:GarKiaLeo17} with dynamic participation and synchronous networks; in~\cite{EPRINT:GarKiaLeo20} with dynamic participation and bounded-delay networks; and in~\cite{TCC:GarKiaShe22} with additionally the imperfect local clocks.
+
+Recall that we are in a dynamic, bounded-delay setting with drifting clocks and our timestamp scheme in~\cref{subsec:new-parallel-blockchain} does not ask for monotonically increasing timestamps for blocks in the same stages.
+%
+This implies that during any period of time, as long as all honest local clocks are in the same stage, an isolated success guarantees the progression on honest chains regardless of the honest block difficulty and adversarial behavior.
+%
+Hence, Chain-Growth lemma still applies \emph{unconditionally} in the same stage which we state as Same-stage Chain Growth lemma as follows.
+
+\begin{lemma}[Same-stage Chain Growth]
+    Let $u, v$ be two nominal time steps of an execution $E$ such that all honest local clocks stay in the same stage during time $[u, v]$.
+    %
+    If at time $u$ an honest party diffuses a chain of difficulty $d$ with chain index $i$, then by time $v$ every honest party has received a chain of difficulty at least $d + Q^i(S)$ where $S = \{r : u + \delay \le r \le v - \delay \}$.
+\end{lemma}
+
+In our analysis, we will concern sequence of time steps that span among different stages.
+%
+Yet, we highlight that the unconditional Chain-Growth lemma does not apply when honest local clocks split in different stages.
+%
+This is because timestamp monotonicity is required for blocks in different stages, which implies that when honest parties stay in different stages, an isolated success does not necessarily contribute to the progress of honest chains.
+%
+For example, suppose that party \party at nominal time $r$ produces a block \block extending a chain \chain, with timestamp of the second stage of the first interval, followed by \delay time steps that no honest block being produced.
+%
+Then, another party $\party'$ at time $r' = r + \delay'$ ($\delay' > \delay$) produces another block $\block'$, extending the same chain \chain with timestamp of the first stage of the same interval, also followed by \delay time steps that no honest block being produced.
+%
+Such event happens in that $\party'$ defers the processing of block \block due to clock drifts.
+%
+As a result, while each time $r$ and $r'$ qualifies for an isolated success, honest chains progresses by only $\max \{Q(r), Q(r')\}$.
+
+To address this issue and simplify our analysis, we now prove a \emph{conditional} variant of the Chain-Growth lemma.
+%
+Specifically, we show the lower bound on honest progression after dropping all isolated successes during nominal time steps that honest parties split in different stages.
+%
+Such approach works so long as (i) the number of nominal time steps that parties stay in different stages (and therefore the number of isolated success) is bounded with respect to clock drift rate \clockDrift and the length of an interval; and (ii) the difference of honest block difficulty is bounded in neighboring stages.
+%
+Note that the above two aspects implicitly requires certain pre-conditions.
+%
+First, the length of time-step sequences that we concern should be relatively large compared with the upper bound on time steps that parties split, otherwise the impact of trimming those time steps might be unbounded.
+%
+Next, in a sequence of fixed number of time steps honest parties should always query blocks with targets close to each other.
+
+To this end, we revise the Chain Growth lemma and apply these two pre-conditions.
+%
+Intuitively, this can be viewed as counting all isolated success for steps that parties do not split and then ``averaging'' them to all time steps.
+%
+We now state this ``averaged'' variant of Chain Growth as follows.
+
+\begin{lemma}[Averaged Chain Growth] \label{lemma:averaged-chain-growth}
+    In a $(\gamma, s)$-respecting environment, let $u, v$ be two nominal time steps of an execution $E$ such that all time steps in $[u, v]$ are good.
+    %
+    If at time $u$ an honest party diffuses a chain of difficulty $d$ with chain index $i$, then by time $v$ every honest party has received a chain of difficulty at least
+    %
+    \[ d + Q^i(S) - \epsilon(1 - \epsilon)(1 - (1 + \delta) \gamma^2 f)^\delay p h(S), \]
+    %
+    where $S = \{r : u + \delay \le r \le v - \delay \}$.
+    %
+    If additionally $v - u \ge \ell$ and $Q^i(S) > (1 - \epsilon)[1 - (1 + \delta)\gamma^2 f]^{\delay} p h(S)$, then by time $v$ every honest party has received a chain of difficulty at least
+    %
+    \[ d + Q^{i, \mathrm{avg}}(S), \]
+    %
+    where $Q^{i, \mathrm{avg}}(S) \triangleq (1 - \epsilon) Q^i(S)$.
+\end{lemma}
+
+\begin{proof}
+    Let us drop the chain-index superscript $i$ for convenience.
+    %
+    If two blocks are obtained at time steps which are at distance at least \delay and all parties are in the same stage in between, then we are certain that the later block increased the accumulated difficulty.
+    %
+    Consider $S' \subseteq S$ such that for all $i, j \in S'$, $|i - j| \ge \delay$ and $Y_i > 0$ and $S'' \subseteq S'$ such that for all $i \in S''$ all parties stay in the same stage.
+    %
+    We argue that, by time $v$, every honest party has a chain of difficulty at least $d + Y(S'') \le d + Q(S'') = d + Q(S) - Y(S' \backslash S'')$.
+    %
+    This is because every honest party will receive the chain of difficulty $d$ by time $u + \delay$ and so the first block obtained in $S''$ extends a chain of weight at least $d$.
+    %
+    Next, note that if a block obtained in $S''$ is the head of a chain of weight at least $d'$, then the next block in $S''$ extends a chain of weight at least $d'$.
+
+    Regarding $Y(S' \backslash S'')$, we may consider $S'$ of size between $\ell / 2$ and $\syncLen / 2$ with at most one sub-sequence of consecutive time steps that parties split in different stages.
+    %
+    Such partition always works in that the duration of each stage is larger than $\ell$ but small than \syncLen.
+
+    Fix a partition $S'$ and denote $S' \backslash S'' = \{s_1, \ldots, s_n \}$ ($n < \maxSkew$).
+    %
+    It holds that
+    %
+    \begin{equation*}
+        Q(S' \backslash S'')
+        \le
+        \sum_{i \in [n]} \frac{1}{T^{\mathrm{min}}_{s_i}}
+        \le
+        \maxSkew \cdot \frac{2 \gamma^3 p h(S)}{f |S|}
+        \le
+        \frac{4 \gamma^3 \maxSkew}{f \ell} ph(S)
+        \le
+        \epsilon(1 - \epsilon)(1 - (1 + \delta) \gamma^2 f)^\delay p h(S).
+    \end{equation*}
+    %
+    The last inequality follows Condition~\eqref{condition:clock-drift}.
+\end{proof}
+
+
+\begin{lemma} \label{lemma:random-variable-bounds}
+    Let $S = \{r : u \le r \le v \}$ be a set of consecutive at least $\ell$ time steps and $J$ the set of adversarial queries in $U = \{r : u - \delay \le r \le v + \delay \}$.
+    %
+    \begin{cccItemize}[nosep]
+        \item $\mathsf{goodConv}^i_{\honestPartySet}(U) \implies (1 + \epsilon) p|J| \le Q^{i, \mathrm{avg}}(S) \le Q^i(S) \le D^i(U)$.
+
+        \item If $\mathsf{goodConv}^i_{\adv}(J, k)$ holds, then either $A(J) < (1 + \epsilon)p|J|$ or
+        %
+        \[ T(J)A(J) < (1 - \epsilon)^2 \cdot \frac{[1 - (1 + \delta) \gamma^2 f]^{\delay} f}{2  \gamma^3} \cdot k. \]
+    \end{cccItemize}
+\end{lemma}
+
+\begin{proof}
+    (a) The middle inequality follows directly with the definitions.
+    %
+    For the other two, let us first verify the following inequalities:
+    %
+    \[ h(U) = h(S) + h(U \backslash S) \le \Big(1 + \frac{2\gamma \delay}{\ell} \Big) h(S) < (1 + \frac{\epsilon^2}{2}) h(S). \]
+    %
+    The first inequality comes from~\cref{fact:respecting-env-inequalities}(b); and the next one
+
+    (b) Either $\epsilon p|J| \ge \tau \alpha(J)$ and~\cref{def:ideal-conv-events} applies directly, or $p|J| < \tau \alpha(J) / \epsilon$ thus we get the inequalities by substituting $\alpha(J, k)$ as defined in~\cref{eq:alpha-j-k}.
+    %
+    \[ T(J)A(J) <  (1 + \frac{1}{\epsilon}) \cdot \frac{\epsilon [1 - (1 + \delta) \gamma^2 f]^\delay f k}{2(1 + 4\epsilon) \gamma^3} < (1 - \epsilon)^2 \cdot \frac{[1 - (1 + \delta) \gamma^2 f]^{\delay} f}{2  \gamma^3} \cdot k. \]
+    %
+    The second inequality follows $(1 + 4\epsilon)(1 - \epsilon)^2 > 1 + \epsilon$ and Condition~\eqref{condition:error}.
+\end{proof}

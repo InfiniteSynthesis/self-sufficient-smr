@@ -1,0 +1,39 @@
+\subsection{State Machine Replication}
+
+Regarding the fast fairness property, we show that any party that controls $\alpha$ fraction of the computational power has probability $(1 - \epsilon')\alpha$ to get selected as the output for any constant $\epsilon' > 0$.
+%
+Note that $\epsilon$ is the protocol parameter on ideal convergence quality, and $\epsilon' = 12 \epsilon$ can be tuned to be an arbitrarily small constant.
+
+\begin{lemma} \label{lemma:fast-fairness}
+    Consider a BA invocation that outputs $(\tx_1, \ldots, \tx_n)$ at time $r$ and let $W$ denote the time window of the first interval where parties replace their input with a block with minimum hash.
+    %
+    Assume a party \party makes $h$ random oracle queries during $W$ and let $n$ denote the number of total random oracle queries made by all parties in $W$.
+    %
+    The probability that $tx_1$ contains \party's public key is $(1 - \epsilon')(h / n)$ for $\epsilon' = 12\epsilon$.
+\end{lemma}
+
+\begin{proof}[Proof(sketch)]
+    First note that due to~\cref{thm:no-bad-ro-events} that collision on RO queries happen with only negligible probability.
+    %
+    Suppose the king chain in the first interval is a good chain - i.e., honest parties share common view on the chain.
+    %
+    Following a similar argument in~\cref{thm:interval-oblivious-agreement}, we learn that honest parties can contribute to  the probability that one of $h$ queries yield the minimum hash among $n$ queries is $(1 - \epsilon)(h / n) / (1 + 10 \epsilon) \ge (1 - 11 \epsilon) (h / n)$.
+    %
+    Now, under the protocol parametrization that king chain yields a bad chain with $\epsilon$ probability, it holds that $tx_1$ contains \party's public key is at least $(1 - 12\epsilon)(h / n)$.
+\end{proof}
+
+In~\cref{thm:state-machine-replication} we conclude that when the clock drift, network latency and all other protocol parameters satisfy certain conditions, our protocol \pSMR solves the clock synchronization problem achieves all desired properties.
+
+\medskip\noindent\textbf{\cref{thm:state-machine-replication}.}\textit{
+    In a $(\gamma, s)$-respecting environment, assume that honest majority holds throughout the execution, all parties are equipped with physical clocks with \clockDrift-bounded rate and the diffusion network is \delay-bounded.
+    %
+    If all protocol parameters are well-set under Condition~\eqref{condition:error}, \eqref{condition:mining-rate} and \eqref{condition:clock-drift}, then \pSMR (\cref{protocol:main-protocol}) solves the state machine replication problem and achieves consistency, expected-constant liveness, \maxSkew-bounded skews and $(\clockDrift + \epsilon)$-accuracy; and fast fairness, except with probability negligibly small with respect to the security parameter.
+}
+
+\begin{proof}
+    Regarding consistency and expected-constant liveness, our proof is a reminiscent of the Chain-King Consensus in~\cite{EC:GarKiaShe24}.
+    %
+    For the clock skew and accuracy part, it follows directly with~\cref{lemma:good-skew,lemma:good-accuracy}.
+    %
+    The fast fairness property follows \cref{lemma:fast-fairness}.
+\end{proof}

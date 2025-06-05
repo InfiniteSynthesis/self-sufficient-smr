@@ -1,0 +1,358 @@
+\subsection{Properties of Protocol Executions}
+\label{subsec:properties-of-protocol-executions}
+
+\paragraph{Honest convergence probability.}
+%
+We first show that the probability that good concentrations on random variables (specifically, lower bound on $Q(S)$ and upper/lower bound on $D(S)$) will happen except with error that decreases exponentially with respect to the length of time step sequences that we concern.
+
+\begin{definition}
+    [Ideal-convergence events]
+    \label{def:ideal-conv-events}
+
+    We define the following ideal-convergence events with respect to a chain index $i \in [m]$.
+    %
+    \begin{cccItemize}[noitemsep]
+        \item For a set $S$ of consecutive time steps, let $\mathsf{goodConv}^i_{\honestPartySet}(S)$ denote the event that $Q^i(S)$ and $D^i(S)$ stays close to their expected value.
+        %
+        \[ \mathsf{goodConv}^i_{\honestPartySet}(S) \triangleq (1 - \epsilon)[1 - (1 + \delta)\gamma^2 f]^{\delay} p h(S) < Q^i(S) \wedge (1 - \epsilon) p h(S) < D^i(S) < (1 + \epsilon) p h(S). \]
+
+        \item For a set $J$ of consecutive adversarial queries and
+        %
+        \begin{equation} \label{eq:alpha-j-k}
+            \alpha(J, k) = \frac{\epsilon f [1 - (1 + \delta) \gamma^2 f]^{\delay}}{2 (1 + 4\epsilon) \gamma^3 \tau} \cdot  \frac{k}{T(J)},
+        \end{equation}
+        %
+        let $\mathsf{goodConv}_{\adv}(J, k)$ denote the event that $A^i(J)$ and $B^i(J)$ are well upper bounded.
+        %
+        \[ \mathsf{goodConv}^i_{\adv}(J) \triangleq A^i(J) < p|J| + \max \{ \epsilon p|J|, \tau \alpha(J) \} \wedge B^i(J) < p|J| + \max \{ \epsilon p|J|, \alpha(J) \}. \]
+
+        \item  For nominal time $r$ and $S = \{1, \ldots r\}$, let $\mathsf{goodConv}^i(r, k)$ denote the event where, for any time $u \le r - k$, $\mathsf{goodConv}^i_{\honestPartySet}$ holds for $S[u : r]$ and $\mathsf{goodConv}_{\adv}$ holds for $J[u : r]$ and $k = r - u$.
+        %
+        Precisely,
+        %
+        \[ \mathsf{goodConv}^i(r, k) \triangleq \bigwedge_{u \in [r - k]} \Big( \mathsf{goodConv}^i_{\honestPartySet}(S[u : r]) \wedge \mathsf{goodConv}^i_{\adv}(J[u : r], r - u) \Big), \]
+        %
+        where $S = \{u, \ldots, r\}$ and $J$ the set of adversarial queries in $S$.
+    \end{cccItemize}
+\end{definition}
+
+The following proposition, considers the basic bounds on the expectation and variance of random variables $D_r, Y_r$ (due to~\cite{EPRINT:GarKiaLeo20}), and apply them per chain index.
+
+\begin{proposition} \label{proposition:random-variable-bounds-preliminary}
+    For any time step $r$ and any chain index $i \in [m]$, it holds that
+    %
+    \begin{enumerate}[label=(\alph*), leftmargin=*, nosep]
+        \item $[1 - f (T^{i, \mathrm{max}}_r, h_r )] p h_r \le \EX[Y^i_r |\E_{r - 1} = E_{r - 1}] \le \EX[D^i_r |\E_{r - 1} = E_{r - 1}] = p h_r$.
+
+        \item $\EX[(Y^i_r)^2 | \E_{r - 1} = E_{r - 1}] \le p h_r /T^{i, \mathrm{min}}_r.$
+
+        \item $\Var[D^i_r | \E_{r - 1} = E_{r - 1}] \le p h_r / T^{i, \mathrm{min}}_r$.
+    \end{enumerate}
+\end{proposition}
+
+\begin{proof}
+    Let us drop the superscript $i$ on targets and random variables, and subscript $r$ on number of parties for convenience.
+
+    (a) Suppose that the $h$ honest parties at time $r$ query for targets $T_1, \ldots , T_n$.
+    %
+    Observe that all these variables are determined by $\E_{r - 1}$. We have
+    %
+    \begin{equation*}
+        \begin{aligned}
+            \EX [Y_r | \E_{r - 1} = E_{r - 1}]
+             & =
+            \sum_{i \in [h]} \frac{1}{T_i} \cdot \frac{T_i}{2^{\kappa / m}} \prod_{i < j} [1 - f(T_j, 1)]
+            \ge
+            \sum_{i \in [h]} p \prod_{j \in [h]} [1 - f(T_j, 1)]
+            \\
+             & \overset{(\ast)}{\ge}
+            \sum_{i \in [h]} p \prod_{j \in [h]} \big[ 1 - f(T^{\mathrm{max}}, 1) \big]
+            =
+            \sum_{i \in [h]} p \big[ 1 - f(T^{\mathrm{max}}, h) \big]
+            =
+            ph \big[ 1 - f(T^{\mathrm{max}}, h) \big]
+        \end{aligned}
+    \end{equation*}
+    %
+    where inequality~$(\ast)$ holds because $f(T, n)$ is increasing in $T$.
+
+    For (b) and (c), it holds that
+    %
+    \[ \Var[D_r | \E_{r - 1} = E_{r - 1}] \le \sum_{i \in [h]} \frac{1}{T^2_i} \cdot \frac{T_i}{2^{\kappa / m}} = \sum_{i \in [h]} \frac{p}{T_i} \le \frac{pn}{T^{\mathrm{min}}}, \]
+    %
+    and $\EX[Y_r^2 | \E_{r - 1} = E_{r - 1}]$ is upper-bounded alike.
+\end{proof}
+
+The following theorem gives an upper bound, as a function of $k$, on the event that $\mathsf{goodConv}_{\honestPartySet}(S)$ does not hold for a consecutive $S$ time steps with $|S| = k$.
+
+\begin{theorem} \label{thm:honest-convergence-prob}
+    In a $(\gamma, \sigma)$-respecting environment, for any chain $i$ and any set $S$ of at least $k \ge \ell$ consecutive \emph{good} time steps, $\mathsf{goodConv}^i_{\honestPartySet}(S)$ holds except with probability no more than $\epsilon_\honestPartySet(k)$ where
+    %
+    \[ \epsilon_\honestPartySet(k) \triangleq \exp \bigg\{ \ln (\delay + 2) - \frac{\epsilon^2 f [1 - (1 + \delta) \gamma^2 f]^{\delay + 1}}{4 \gamma^3 \delay (1 + \epsilon / 3)} \cdot \min \{k, s \} \bigg\}. \]
+\end{theorem}
+
+\begin{proof}
+    Fix a chain index and drop all related superscripts on random variables.
+    %
+    Fix an execution $E_0$ just before the beginning of $S$.
+
+    We first consider the lower bound on $Q(S)$.
+    %
+    For each nominal time $i \in S$, define a Boolean random variable $F_i$ equal to $1$ exactly when all $h_i$ queries of the honest parties yield evaluations above $\min \{T : f (T, h_i) \ge (1 + \delta) \gamma^2 f \}$; define $Z_i = Y_i \cdot F_{i + 1} \cdots F_{i + \delay - 1}$.
+    %
+    Let $G$ denote the event that the time steps in $S$ are good.
+    %
+    Given $G$, for any $i \in S, (F_i = 1) \implies (D_i = 0)$ and so $Q_i \ge Z_i$.
+    %
+    For any $d$, it holds that
+    %
+    \[ \Pr \Big[ G \wedge \sum_{i \in [k]} Q_i \le d \Big] \le \Pr \Big[ G \wedge \sum_{i \in [k]} Z_i \le d \Big] \]
+    %
+    thus we now work on $Z_i$.
+
+    Identify $S$ with $\{1, \ldots, |S|\}$ and partition it with sets of the form $S_j = \{j, j + \delay, j + 2\delay, \ldots \}$ for $j \in \{ 0, 1, \ldots, \delay - 1 \}$.
+    %
+    Fix a set $S_j = \{s_1, s_2, \ldots , s_\nu \}$, with $\nu \ge \lceil |S| / \delay \rceil$, and define the event $G_t$ as the conjunction of the events $G$ and $t = \epsilon(1 - 2\gamma^2f )^\delay p h(S_j)$.
+    %
+    We consider the following event:
+    %
+    \[ G_t \wedge \sum_{i \in S_j} Z_i \le [1 - (1 + \delta) \gamma^2 f]^\delay p \sum_{i \in S_j} h_i - t. \]
+    %
+    To that end, consider the sequence of random variables
+    %
+    \[ X_0 = 0; X_u = \sum_{i \in [u]} Z_{s_i} - \sum_{i \in [u]} \EX[Z_{s_i} | \E_{s_i - 1}], u \in [\nu]. \]
+    %
+    This is a martingale with respect to the sequence $\E_{s_1 - 1}(\E_0 = E_0), \ldots, \E_{s_\nu - 1}, \E$ because, following the linearity of conditional expectation and the fact that $X_{u - 1}$ is a deterministic function of $\E_{s_{u - 1} + \delay - 1} = \E_{s_u - 1}$, it holds that
+    %
+    \[ \EX[X_u | \E_{s_u - 1}] = \EX \big[ Z_{s_u} - \EX [ Z_{s_u} | \E_{s_u - 1}] \big| \E_{s_u - 1} \big] + \EX [X_{u - 1} | \E_{s_u - 1}] = X_{u - 1}. \]
+    %
+    In addition, given an execution $E$ satisfying $G_t$,
+    %
+    \[ \epsilon \sum_{i \in S_j} \EX [Z_i | \E_{s_u - 1} = E_{s_u - 1}] \ge \epsilon \sum_{i \in S_j} [1 - (1 + \delta) \gamma^2 f]^\delay p h_i = t. \]
+
+    Now, consider the details relevant to~\cref{thm:martingale-bound}.
+    %
+    For an execution $E$ satisfying $G_t$, let $B$ denote the event $\E_{s_u - 1} = E_{s_u - 1}$.
+    %
+    Note that $Z^2_{s_u} = Y^2_{s_u} \cdot F_{s_u + 1} \cdots F_{s_u + \delay - 1}$ and all these random variables are independent given $B$.
+    %
+    Since $X_u - X_{u - 1} = Z_{s_u} - \EX [Z_{s_u} |\E_{s_u - 1}]$, let $S^{(u)}_j$ denote a sub sequence of $S_j$ of length $\min \{ \nu, s / \delay \}$ such that $s_u \in S^{(u)}_j$.
+    %
+    It holds that
+    %
+    \begin{equation} \label{eq:b-def-qs-lb}
+        Z_{s_u} - \EX [Z_{s_u} |B] \le \frac{1}{T^{\mathrm{min}}_{s_u}} \le \frac{p h_{s_u}}{{ph_{s_u}} T^{\mathrm{min}}_{s_u}} \le \frac{\gamma p h(S^{(u)}_j)}{{ph_{s_u}} T^{\mathrm{min}}_{s_u} |S^{(u)}_j|} \le \frac{2\gamma^3 t}{\epsilon (1 - 2\gamma^2 f)^\delay f \cdot \min\{ \nu, s / \delay \}} \defeq b.
+    \end{equation}
+    %
+    The third inequality holds due to~\cref{fact:respecting-env-inequalities}(a); and the next one is because $s_u$ is a good time step.
+    %
+    We see that the event $G$ implies $X_u - X_{u - 1} \le b$.
+
+    With respect to $V = \sum_u \Var [X_u - X_{u - 1} | \E_{s_u - 1}] \le \sum_u \EX [Z^2_{s_u} | \E_{s_u - 1}]$, first recall~\cref{fact:respecting-env-inequalities}(a), we have
+    %
+    \[ \sum_{u \in [\nu]} \big( p h_{s_u} \big)^2 \le \sum_{u \in [\nu]} p h_{s_u} \frac{p \gamma h(S^{(u)}_j)}{|S^{(u)}_j|} \le \frac{\gamma}{\min \{ \nu, s / \delay \}} \big( p h(S_j) \big)^2. \]
+    %
+    Then, using the independence of the random variables it holds that
+    %
+    \begin{align}
+        \sum_{u \in [\nu]} \EX [Z^2_{s_u - 1} | B]
+         & \le
+        [1 - (1 + \delta) \gamma^2 f]^{\delay - 1} \sum_{u \in [\nu]} \frac{ \big( p h_{s_u} \big)^2}{p h_{s_u} T^{\mathrm{min}}_{s_u}}
+        \le
+        \frac{2\gamma^3 [1 - (1 + \delta) \gamma^2 f]^{\delay - 1}}{f \cdot \min \{ \nu, s / \delay \}} \cdot \big( p h(S_j) \big)^2
+        \nonumber \\
+        \label{eq:v-def-qs-lb}
+         & \le
+        \frac{2 \gamma^3 t^2}{\epsilon^2 f (1 - 2\gamma^2 f)^{\delay + 1} \cdot \min\{ \nu, s / \delay \}} \defeq v.
+    \end{align}
+    %
+    The first inequality holds due to~\cref{proposition:random-variable-bounds-preliminary}(b); the second one is because the inequality above and that all time steps in $S_j$ are good; and the last one is acquired by substituting $t$.
+
+    After applying \cref{thm:martingale-bound}, we have
+    %
+    \[ \Pr[- X_{\nu} \ge t \wedge G_t] \le \exp \Big\{ - \frac{t^2}{2v(1 + \epsilon / 3)} \Big\} \le \exp \bigg\{ - \frac{\epsilon^2 f [1 - (1 + \delta) \gamma^2 f]^{\delay + 1}}{4\gamma^3 \delay (1 + \epsilon / 3)} \cdot \min \{k, s \} \bigg\}. \]
+    %
+    Note that the first inequality follows $bt < \epsilon v$; and the next one holds by substituting $b, v$ as in~\cref{eq:b-def-qs-lb,eq:v-def-qs-lb} and $\nu \le k / \delay$.
+    %
+    Finally, we apply the union probability to all $j \in \{ 0, 1, \ldots, \delay - 1 \}$ thus
+    %
+    \[ \Pr \Big [G \wedge \sum_{i \in [k]} Q_i \le (1 - \epsilon)(1 + \delta \gamma^2 f)^\delay p h(S) \Big] \le \exp \bigg\{ \ln \delay - \frac{\epsilon^2 f [1 - (1 + \delta) \gamma^2 f]^{\delay + 1}}{4 \gamma^3 \delay (1 + \epsilon / 3)} \cdot \min \{k, s \} \bigg\} \defeq \epsilon_Q(k). \]
+
+    Regarding the bounds on $D(S)$, we consider per honest query.
+    %
+    Let $J$ denote the queries in $S$ ($\nu = |J|$), and $Z_i$ the difficulty of any block obtained from query $i \in J$.
+    %
+    For the lower bound, define the martingale sequence
+    %
+    \[ X_0 = 0; X_u = \sum_{i \in [u]} Z_i - \sum_{i \in [u]} \EX [Z_i | \E_{i - 1}], u \in [\nu] \]
+    %
+    and let $t = \epsilon p \nu$.
+    %
+    Analogously, by considering a sub sequence of $S$ of length $\min \{ \nu, s \}$, we have
+    %
+    \[ X_u - X_{u - 1}  \le \frac{2 \gamma^3 t}{\epsilon f \cdot \min\{ \nu, s \}} \defeq b ~\mathrm{and}~ V \le \frac{2\gamma^3 t^2}{\epsilon^2  f \cdot \min\{ \nu, s \}} \defeq v. \]
+    %
+    After applying \cref{thm:martingale-bound}, it holds that
+    %
+    \[ \Pr \Big [G \wedge \sum_{i \in [k]} D_i \le (1 - \epsilon) p h(S) \Big] \le \exp \Big\{ - \frac{t^2}{2v(1 + \epsilon / 3)} \Big\} \le \exp \Big\{ - \frac{\epsilon^2 f}{4\gamma^3 (1 + \epsilon / 3)} \cdot \min \{ k, s \} \Big\} \defeq \epsilon_D(k). \]
+    %
+    The error probability on violating the upper bound on $D(S)$ can be computed in the same way, and yields the same as $\epsilon_D(k)$.
+    %
+    To compute $\epsilon_\honestPartySet$, we consider the union bound that $Q(S)$ and $D(S)$ yields good concentration.
+    %
+    Specifically, let $G_{Q,D}(S)$ denote the event $(1 - \epsilon)[1 - (1 + \delta)\gamma^2 f]^{\delay} p h(S) < Q^i(S) \wedge (1 - \epsilon) p h(S) < D^i(S) < (1 + \epsilon) p h(S)$, it holds that
+    %
+    \begin{align*}
+        \Pr[\neg G_{Q,D}(S)]
+         & =
+        1 - [1 - \epsilon_Q(k)] [1 - \epsilon_{D}(k)]^2
+        \le
+        \epsilon_Q(k) + 2 \epsilon_{D}(k) \\
+         & \le
+        \exp \bigg\{ \ln (\delay + 2) - \frac{\epsilon^2 f [1 - (1 + \delta) \gamma^2 f]^{\delay + 1}}{4 \gamma^3 \delay (1 + \epsilon / 3)} \cdot \min \{k, s \} \bigg\},
+    \end{align*}
+    %
+    which defines $\epsilon_\honestPartySet(k)$.
+\end{proof}
+
+Next, consider a sequence of adversarial queries $J$.
+%
+We show that the probability of the event regarding the violation of $\mathsf{goodConv}_\adv(J, k)$ is also upper-bounded as a function of $k$.
+
+\begin{theorem} \label{thm:adversarial-convergence-prob}
+    For any chain $i$ and any set $J$ of consecutive adversarial queries and $\alpha(J, k)$ as defined in~\cref{eq:alpha-j-k}, it holds that
+    %
+    \[ A^i(J) < p|J| + \max \{ \epsilon p|J|, \tau \alpha(J) \} ~~\mathrm{and}~~ B^i(J) < p|J| + \max \{ \epsilon p|J|, \alpha(J) \} \]
+    %
+    except with probability no more than $\epsilon_\adv(k)$ where
+    %
+    \[ \epsilon_\adv(k) \triangleq \exp \bigg\{ - \frac{\epsilon^2 f [1 - (1 + \delta) \gamma^2 f]^{\delay}}{4 \gamma^3 \tau (1 + 5\epsilon)} \cdot k \bigg\}. \]
+\end{theorem}
+
+\begin{proof}
+    For each $j \in J$, let $A_j$ be equal to the difficulty of the block obtained with the $j$-th query as long as the target was at least $T (J)/\tau$; thus, $A(J) = \sum_{j \in J} A_j$.
+    %
+    If $|J| = \nu$, identify $J$ with $[\nu]$ and define the martingale
+    %
+    \[ X_0 = 0;~ X_u = \sum_{j \in [u]} A_j - \sum_{j \in [u]} \EX [A_i | \E_{j - 1}], u \in [\nu]. \]
+    %
+    For all $u \in [\nu]$ we have $X_u - X_{u - 1} \le \tau /T (J)$, $\Var[X_u - X_{u - 1} | \E_{u - 1}] \le p\tau / T(J)$, and $E[A_j | \E_{j - 1}] \le p$.
+
+    We now apply \cref{thm:martingale-bound} with $b = \tau / T(J)$, $v = bp \nu \le bt / \epsilon$; and since $\epsilon < 1 / 2$ due to Condition~\eqref{condition:error}, we have $(1 + 4\epsilon)(1 + \frac{\epsilon}{3}) < (1 + 5\epsilon)$ hence set
+    %
+    \[ t = \max \bigg\{ \epsilon p \nu, 2 (\frac{1}{\epsilon} + \frac{1}{3}) b \cdot \frac{\epsilon^2 f [1 - (1 + \delta) \gamma^2 f]^{\delay}}{4 \gamma^3 \tau (1 + 5\epsilon)} \cdot k \bigg\}. \]
+    %
+    We have
+    %
+    \[ \Pr \Big[ \sum_{j \in J} A_j \ge p \nu + t \Big] \le \exp \Big\{ - \frac{t}{2b (\frac{1}{3} + \frac{1}{\epsilon})} \Big\} \le \exp \bigg\{ - \frac{\epsilon^2 f [1 - (1 + \delta) \gamma^2 f]^{\delay}}{4 \gamma^3 \tau (1 + 5\epsilon)} \cdot k \bigg\}, \]
+    %
+    which defines $\epsilon_\adv(k)$.
+\end{proof}
+
+Given the convergence error $\epsilon_\honestPartySet(k)$ and $\epsilon_\adv(k)$, we now consider the event $\mathsf{goodConv}(r, k)$.
+%
+Note that, since $s = \bigTheta(\log^2 \kappa)$ thus $\epsilon_\honestPartySet(s)$ and $\epsilon_\adv(s)$ are both negligible, we may consider $\mathsf{goodConv}(r, k)$ for $k < s$.
+
+\begin{lemma} \label{lemma:good-conv-single-chain}
+    Let $E$ be a typical execution in a $(\gamma, s)$-respecting environment.
+    %
+    If the execution $E_{r - 1}$ is good with respect to chain $i$, then $\mathsf{goodConv}^i(r, k)$ holds except with probability no more than $\epsilon_{\mathsf{conv}}(k)$ where
+    %
+    \[
+        \epsilon_{\mathsf{conv}}(k) \triangleq \frac{1}{1 - c} \cdot \exp \bigg\{ \ln (\delay + 3) - \frac{\epsilon^2 f [1 - (1 + \delta) \gamma^2 f]^{\delay + 1}}{4 \gamma^3 (1 + 5\epsilon) \cdot \max \{ \delay, \tau \}} \cdot k \bigg\}
+        ~~\text{and}~~
+        c =  \exp \bigg\{- \frac{\epsilon^2 f [1 - (1 + \delta) \gamma^2 f]^{\delay + 1}}{4 \gamma^3 (1 + 5\epsilon) \cdot \max \{ \delay, \tau \}} \bigg\}.
+    \]
+\end{lemma}
+
+\begin{proof}
+    Fix a time step $u \le r - k$ and $S = \{u, \ldots, r \}$ and $J$ the adversarial queries in $S$.
+    %
+    It holds that $\Pr[\neg (\mathsf{goodConv}_{\honestPartySet}(S) \wedge \mathsf{goodConv}_{\adv}(J))] \le 1 - (1 - \epsilon_\adv(k))(1 - \epsilon_{\honestPartySet}(k)) \le \epsilon_\adv(k) + \epsilon_\honestPartySet(k)$.
+
+    Consider a new function $\epsilon^*(k)$ such that
+    %
+    \[ \epsilon_\adv(k) + \epsilon_\honestPartySet(k) \le \exp \bigg\{ \ln (\delay + 3) - \frac{\epsilon^2 f [1 - (1 + \delta) \gamma^2 f]^{\delay + 1}}{4 \gamma^3 (1 + 5\epsilon) \cdot \max \{ \delay, \tau \}} \cdot \min \{k, s\} \bigg\} \defeq \epsilon^*(k). \]
+    %
+    Since $\epsilon^*(k)$ is an exponential function when $k \le s$, it holds that for any $k \le s$, there exist a constant $c \in (0, 1)$ such that
+    %
+    \[ \frac{\epsilon^*(k + 1)}{\epsilon^*(k)} = \exp \bigg\{- \frac{\epsilon^2 f [1 - (1 + \delta) \gamma^2 f]^{\delay + 1}}{4 \gamma^3 (1 + 5\epsilon) \cdot \max \{ \delay, \tau \}} \bigg\} = c \]
+
+    Therefore, consider the union probability for all time steps in $\{ \max\{ 1, r - s\}, \ldots, r - k\}$ and using \cref{fact:geometric-series-limit}, it holds that
+    %
+    \begin{align*}
+        \Pr[\neg \mathsf{goodConv}(r, \ell)]
+         & =
+        1 - \prod_{1}^{r - \ell} (1 - \Pr[\neg (\mathsf{goodConv}_{\honestPartySet}(S) \wedge \mathsf{goodConv}_{\adv}(J))])
+        \\
+         & \le
+        \sum_{1}^{r - \ell} \Pr[\neg (\mathsf{goodConv}_{\honestPartySet}(S) \wedge \mathsf{goodConv}_{\adv}(J))]
+        \\
+         & \le
+        \epsilon^*(k) \cdot (1 + c + c^2 + \ldots)
+        \le
+        \frac{ \epsilon^*(k) }{1 - c},
+    \end{align*}
+    %
+    which defines $\epsilon_{\mathsf{conv}}(k)$.
+\end{proof}
+
+\begin{corollary} \label{corollary:conv-interval-length}
+    For any $c \in (0, 1)$, there exists $\ell \in \mathbb{N}^+$ such that for any sequence $S$ of consecutive time steps with $|S| = \poly(\ell)$, $\mathsf{goodConv}^i(r, \ell)$ holds for all time steps in $S$ except with probability no more than $c$.
+\end{corollary}
+
+\begin{proof}
+    We apply the union probability to all time steps $r \in S$ which yields
+    %
+    \[ 1 - \prod_{r \in S} \big(1 - \epsilon_{\mathsf{conv}}(\ell) \big) \le \poly(\ell) \cdot \epsilon_{\mathsf{conv}}(\ell). \qedhere \]
+\end{proof}
+
+\begin{corollary} \label{corollary:conv-interval-m}
+    Let $E$ be a typical execution in a $(\gamma, s)$-respecting environment.
+    %
+    If the execution $E_{r - 1}$ is good with respect to chain $i$, then there exist a subset $\mathcal{I} \subseteq [m]$ of size at least $(1 - \epsilon)(1 - \epsilon_{\mathsf{conv}}(k)) m$ such that for all $i \in \mathcal{I}$, $\mathsf{goodConv}^i(r, k)$ holds.
+\end{corollary}
+
+\begin{proof}
+    Given that the executions on each chain are mutually independent and the number of chains $m = \bigTheta(\log^2 \kappa)$, we prove this corollary using Chernoff bound (\cref{thm:chernoff-bounds}).
+    %
+    In more details, let $X_i$ denote the random variable such that if $\mathsf{goodConv}^i(r, k)$ holds then $X_i = 1$; and otherwise $X_i = 0$.
+    %
+    Also let $X = \sum_{i \in [m]} X_i$.
+    %
+    Due to~\cref{lemma:good-conv-single-chain}, $\Pr[X_i = 1] \ge 1 - \epsilon_{\mathsf{conv}}(k)$ We have $\EX[X] \ge (1 - \epsilon_{\mathsf{conv}}(k))m$.
+    %
+    Hence, it holds that
+    %
+    \[ \Pr \big[ X \le (1 - \epsilon)(1 - \epsilon_{\mathsf{conv}}(k))m \big] \le \Pr \big[ X \le (1 - \epsilon) \EX[X] \big] \le \exp \big\{ - \epsilon^2 (1 - \epsilon_{\mathsf{conv}}(k))m / 2 \big\}. \]
+    %
+    Note that $m = \bigTheta(\log^2 \kappa)$, the event such that good convergence does not hold on sufficiently many chains happens with probability negligible in terms of the security parameter.
+\end{proof}
+
+\paragraph{Bad events with respect to the random oracle.}
+%
+Following~\cite{EPRINT:GarKiaLeo14}, we consider three bad events --- namely, block insertions, copies and predictions --- with respect to the random oracle.
+%
+An \emph{insertion} happens when a block $\block^*$, created after two consecutive blocks \block and $\block'$ on chain \chain, yields $\block, \block^*, \block'$ three consecutive blocks of a valid chain; a \emph{copy} occurs if the same block exists in two different positions; a \emph{prediction} occurs when a block extends one with later creation time.
+
+Note that, with parallel chains and \mforone PoW, these bad events ought to be reasoned per chain index (while in previous works the entire RO output is assigned to the only single chain).
+%
+For example, an insertion with respect to chain index $i \in [m]$ happens if the $i$-th segment of hash of block $\block^*$ is identical to the $i$-th segment of hash of block \block, implying a ``partial'' collision on two different RO queries.
+%
+We show in the following theorem that for all parallel chains, bad events happen with only negligible probability.
+
+\begin{theorem} \label{thm:no-bad-ro-events}
+    Consider an execution $E$ of $L = \poly (\kappa)$ time steps.
+    %
+    No insertions, no copies, and no predictions occurred in $E$, except with probability negligibly small in $\kappa$.
+\end{theorem}
+
+\begin{proof}
+    Let $Q$ denote the total number of random oracle queries all parties made in $L = \poly \kappa$ time steps.
+    %
+    We consider the partial collision which happens when there exist two RO outputs $h, h'$ and an integer $i \in [m]$ such that $\stringSegment{h}{i}{m} = \stringSegment{h'}{i}{m}$.
+    %
+    Fix $i$, a partial collision with respect to $i$ happens with probability $Q^2 / 2^{\kappa / m} = \exp(2\log Q - \omega(\log \kappa))$ which is negligible in $\kappa$.
+    %
+    Since $m = \bigTheta(\log^2 \kappa)$, the probability that no partial collision happens for any $i \in [m]$ yields $1 - (1 - \exp(2\log Q - \omega(\log \kappa)))^m \le m \cdot \exp(2\log Q - \omega(\log \kappa)) = \exp(2\log Q - \omega(\log \kappa))$.
+\end{proof}
