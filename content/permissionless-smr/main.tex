@@ -1,0 +1,17 @@
+\section{Permissionless and Self-Sufficient State Machine Replication with Fast Fairness}
+\label{sec:permissionless-smr}
+
+In this section, we present our permissionless state machine replication protocol \pSMR.
+% 
+We first present a novel parallel blockchain construction serving as a basic platform to run the ``high-level'' tasks (e.g., agreement and clock synchronization) in~\cref{subsec:new-parallel-blockchain}.
+%
+In~\cref{subsec:clock-sync-procedure}, in order for parties to synchronize their clocks periodically,  we propose a new time adjustment algorithm (cf.~\cref{eq:sync-shift}) based on the honest-majority Approximate Agreement protocol in~\cref{subsec:apa-honst-majority}.
+%
+We then, in~\cref{subsec:new-smr-protocol}, show how Byzantine agreement and state machine replication with fast fairness can be built ``on top'' of the parallel blockchains.
+%
+A full description of protocol \pSMR is presented in~\cref{subsec:full-protocol-description}.
+
+\input{content/permissionless-smr/parallel-chain-scheme}
+\input{content/permissionless-smr/clock-synchronization}
+\input{content/permissionless-smr/state-machine-replication}
+\input{content/permissionless-smr/full-description}

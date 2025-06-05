@@ -1,0 +1,111 @@
+\subsection{The New State Machine Replication Protocol}
+\label{subsec:new-smr-protocol}
+
+The parallel blockchain framework that we have introduced, complemented with the clock synchronization mechanism, allows a varying number of parties to reach weak agreement sequentially at the end of each interval.
+%
+Based on this, we build permissionless Byzantine Agreement and state machine replication protocols.
+
+Our approach in this section is based on the constructions in~\cite{EC:GarKiaShe24}, which provide a generic way of building BA that terminates in expected-constant time, and SMR that settles all incoming transactions in expected-constant time on top of parallel chains.
+%
+Their underlying parallel blockchains, however, are not truly-permissionless, operate in a synchronous network and rely on a global clock, shortcomings that we overcome in this paper.
+
+\paragraph{Permissionless BA in expected-constant time.}
+%
+We run ``Chain-King Consensus'' as introduced in~\cite{EC:GarKiaShe24} on top of our parallel blockchain.
+%
+At a high level, this protocol emulates the classical ``Phase-King Consensus'' \cite{ICALP:BerGar89,FOCS:BerGarPer89} with randomized king election \cite{PODC:FitGar03,C:KatKoo06} in the following way.
+
+We map the $i$-th parallel chain to the $i$-th party in a classical randomized Phase-King protocol\footnote{A subtle difference compared with classical protocols is that in Chain-King Consensus, the set of chains that emulates an honest party keeps changing; while in classical protocols the set of honest parties remains the same (yet unknown). The protocol still works in that all state-update operations are based on counting the number of messages and has nothing to do with party identifiers.}.
+%
+For each interval, parties might share possibly different views on the output of a single chain, which emulates that parties share possibly different views on the message sent by a party in the classical protocol.
+%
+If a chain is good (i.e., honest parties share common views and the majority of the input blocks are honestly generated) then it emulates an honest party since its output is unanimous and validity holds.
+%
+Otherwise, a chain emulates a corrupted party as its output might differ among parties or validity might not hold.
+%
+The protocol runs in iterations by checking if parties start with the same input.
+%
+If this is not the case and parties are ``confused'' about the output, then they adopt the output of the king chain (set \emph{deterministically} as the first chain) as their new input (this mimics the oblivious king election in classical protocols).
+%
+Since the duration of intervals are of constant rounds, and the king chain yields a good chain with constant probability, the protocol terminates in expected-constant time.
+
+In more detail, consider a BA invocation where a party \party starts with an input $v$.
+%
+Party \party maintains three internal variables:
+%
+(i) the suggestion of output $\val$ which is initialized as $v$ and can be modified at the end of each interval;
+%
+(ii) a bit variable \lock that indicates whether parties should take the output of king chain;
+%
+(iii) a bit variable \decide that indicates whether a party \party should decide on the current \val as output\footnote{Note that due to non-simultaneous termination, in~\cite{EC:GarKiaShe24}, for one-shot consensus, there is a fourth ``exit'' parameter indicating whether parties should drop from extending the blockchains. For simplicity, we avoid this part in our description and refer to~\cite{EC:GarKiaShe24} for more details.}.
+%
+The protocol proceeds in iterations where each iterations consists of three intervals.
+%
+In the first interval, parties will set both their \decide and \lock to \true if they have seen more than $3 m/ 4$ chains output the same value; and in the second interval, they set only \lock to \true if they have seen more than $3 m/ 4$ chains output the same value.
+%
+In both the first and second intervals, if the majority of chains output the same value, then parties will switch their \val to that output.
+%
+In the third interval, parties update their internal state based on \decide and \lock.
+%
+A party will replace \val with the output of the first (king) chain if both \decide and \lock remains \false; and it will terminate if \decide is \true;
+when \decide remains \false however \lock is set to \true, it resets \lock back to \false.
+
+A detailed description of the core state update algorithm in Chain-King Consensus is presented in~\cref{protocol:update-state-chain-king}.
+
+\paragraph{Permissionless and self-sufficient SMR with fast fairness.}
+%
+Given that an invocation of permissionless BA can be run on top of our parallel chain framework, the translation to permissionless SMR works so long as (i) there are means to coordinate the second and later BA invocations that parties may start at different intervals; and (ii) an honest input is selected as output with \emph{constant} probability which guarantees liveness in expected-constant time.
+
+At a high level, our approach here is reminiscent of that in~\cite{EC:GarKiaShe24}.
+%
+In order to coordinate parties that may start at different times, we employ
+%
+(i) the Bracha-style termination \cite{PODC:Bracha84} to let parties terminate in neighboring intervals at the end of a BA invocation;
+%
+and (ii) super-interval expansion (which mimics the classical super-round expansion in round-preserving sequential composition of BA \cite{JC:CCGZ19}) to allow parties expand normal interval to super-interval that consists of multiple intervals so that even if parties start non-simultaneous they still reach weak agreement on the output of this super interval.
+
+Note that since parties in SMR use a sequence of transactions as their BA input, they are almost unlikely to start unanimously with the same set of transactions (as we will show soon, if parties also want to add the coinbase transaction, then they will never invoke BA with the same input).
+%
+In order to prevent the adversary from dominating the output all the time (due to the weak validity property), we proceed as follows.
+%
+Recall that Chain-King Consensus runs in iterations and each iteration consists of three intervals, when parties are in the first and second interval of an iteration, they decide the output of each chain as follows:
+%
+A party \party outputs $v$ for the $i$-th chain if the majority of input-blocks reports $v$; otherwise \party outputs $\bot$ (in this way, the adversary cannot let parties decide on a batch of transactions that is not an honest input in the first two stages).
+%
+When \party is in the third interval and about to switch her input, she replaces her BA input with the input-block of smallest hash value in the king chain.
+
+We now show how parties can build an ever-growing log with fast fairness.
+%
+Once a block (a sequence of transactions from the BA output) is appended to the log in SMR, it sets up a public key $\mathsf{pk}$ such that the probability that $\mathsf{pk}$ belongs to an honest party is roughly proportional to the fraction of her computational among all protocol participants.
+%
+Upon joining the protocol, a party \party generates her own public-key pair $(\mathsf{pk}, \mathsf{sk})$ as her identifier (pseudonym).
+%
+Recall that our SMR is built on the sequential composition of BA invocations, and in each invocation parties prepare their own input using all unsettled transactions in their buffer.
+%
+We additionally introduce the following mechanism.
+
+At the onset of a BA invocation, \party prepares a special transaction $\tx^{\text{base-tx}}$ that contains her public key $\mathsf{pk}$.
+%
+\party then appends all valid, unsettled transactions in the buffer after $\tx^{\text{base-tx}}(\mathsf{pk})$ as her BA input.
+%
+Moreover, we add an additional interval at the beginning of BA such that at the end of this interval, parties listen to the king chain and switch their \val to the block with minimum hash.
+%
+As a result, the output of each BA in our SMR protocol is a sequence of transactions, with the first transaction being coinbase of public key $\mathsf{pk}$.
+
+Next, we provide some intuition on how the above mechanism helps to achieve fast fairness (refer to~\cref{sec:full-protocol-analysis} for more details).
+%
+We focus on the first interval which serves as a ``lottery''  letting parties replace their input with the block with minimum hash.
+%
+Suppose parties share a common view on the king chain until the end of that interval, if an honest party manages to produce an input-block with the minimum hash among all parties, this implies that she makes a RO query such that the RO response yields minimum among all hash queries made that can contribute to the king chain (that is, the output generation stage of that interval).
+%
+Also note that an input-block with minimum hash will be a valid block on the king chain (since it is definitely smaller than the mining target $T$).
+%
+Hence, the probability that a party wins the lottery is the same as winning the minimum block hash on king chain, and is (roughly) proportional to her computational power among all participants.
+%
+Even though the adversary can gain some bounded advantage by slightly cheating on the block timestamp, yet, since the honest parties share a common view of the king chain, the adversary can only keep including more input-blocks with bogus timestamps for a bounded amount of time.
+%
+In case the king chain is a bad chain, all bets are off.
+%
+Nonetheless, our analysis shows that the protocol can be parameterized so that the probability that the king chain is a bad chain is an arbitrarily small constant.
+%
+Combining these two bounded, constant errors together, we can conclude that whenever a new batch of transactions is to be appended to the SMR log, the probability a party gets selected is proportional to her relative computational power.
