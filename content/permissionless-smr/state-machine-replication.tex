@@ -1,13 +1,13 @@
 \subsection{The New State Machine Replication Protocol}
 \label{subsec:new-smr-protocol}
 
-The parallel blockchain framework that we have introduced, complemented with the clock synchronization mechanism, allows a varying number of parties to reach weak agreement sequentially at the end of each interval.
+The parallel blockchain framework that we have introduced, complemented with the clock synchronization mechanism, allow a varying number of parties to reach weak agreement sequentially at the end of each interval.
 %
 Based on this, we build permissionless Byzantine Agreement and state machine replication protocols.
 
 Our approach in this section is based on the constructions in~\cite{EC:GarKiaShe24}, which provide a generic way of building BA that terminates in expected-constant time, and SMR that settles all incoming transactions in expected-constant time on top of parallel chains.
 %
-Their underlying parallel blockchains, however, are not truly-permissionless, operate in a synchronous network and rely on a global clock, shortcomings that we overcome in this paper.
+Their underlying parallel blockchains, however, are not truly permissionless, operate in a synchronous network and rely on a global clock, shortcomings that we overcome in this paper.
 
 \paragraph{Permissionless BA in expected-constant time.}
 %
@@ -15,7 +15,7 @@ We run ``Chain-King Consensus'' as introduced in~\cite{EC:GarKiaShe24} on top of
 %
 At a high level, this protocol emulates the classical ``Phase-King Consensus'' \cite{ICALP:BerGar89,FOCS:BerGarPer89} with randomized king election \cite{PODC:FitGar03,C:KatKoo06} in the following way.
 
-We map the $i$-th parallel chain to the $i$-th party in a classical randomized Phase-King protocol\footnote{A subtle difference compared with classical protocols is that in Chain-King Consensus, the set of chains that emulates an honest party keeps changing; while in classical protocols the set of honest parties remains the same (yet unknown). The protocol still works in that all state-update operations are based on counting the number of messages and has nothing to do with party identifiers.}.
+We map the $i$-th parallel chain to the $i$-th party in a classical randomized Phase-King protocol\footnote{A subtle difference compared with classical protocols is that in Chain-King Consensus, the set of chains that emulates an honest party keeps changing, while in classical protocols the set of honest parties remains the same (yet unknown). The protocol still works in that all state-update operations are based on counting the number of messages and has nothing to do with party identifiers.}.
 %
 For each interval, parties might share possibly different views on the output of a single chain, which emulates that parties share possibly different views on the message sent by a party in the classical protocol.
 %

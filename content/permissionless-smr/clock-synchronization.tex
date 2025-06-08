@@ -21,7 +21,7 @@ Note that for a beacon \inputBlock labeled with \textsf{temp}, it will be remove
 %
 Since timestamp is part of the block header, a beacon \inputBlock can be a valid one on multiple chains; yet, it suffices to bookkeep only one entry in $\mathsf{arrivalTime}(\cdot)$ and it can be reused for the same beacon in multiple chains.
 
-A beacon \inputBlock is said to be valid with respect to an interval $itvl$ and a chain \chain, if (i) \inputBlock reports a timestamp in the \textsf{OG} stage of interval $itvl$; (ii) \inputBlock points to the last block in the \textsf{VC} stage of interval $itvl$ on \chain; and (iii) \inputBlock is a valid PoW message w.r.t. $itvl$ and \chain.
+A beacon \inputBlock is said to be \emph{valid} with respect to an interval $itvl$ and a chain \chain, if (i) \inputBlock reports a timestamp in the \textsf{OG} stage of interval $itvl$; (ii) \inputBlock points to the last block in the \textsf{VC} stage of interval $itvl$ on \chain; and (iii) \inputBlock is a valid PoW message w.r.t. $itvl$ and \chain.
 %
 Refer to~\cref{algorithm:isValidInputBlock} for a full description.
 

@@ -21,11 +21,11 @@ and (iii) it allows difficulty adjustment thus supports dynamic participation wh
 
 The main difference between our parallel blockchain construction and that employed by Chain-King Consensus in~\cite{EC:GarKiaShe24} is that, in~\cite{EC:GarKiaShe24} it requires a chain to be ``dense'' such that it possesses sufficiently many blocks in any time window of fixed length in an interval, and each chain should point to sufficiently many dense chains in the previous interval (i.e., cross chain reference).
 %
-Contrary, in our construction we completely eliminate the hardcoded density parameter and the cross chain references, hence switching from the ``fragmented'' chain structure to the ``continuous'' one.
+Contrary, in our construction we completely eliminate the hardcoded density parameter and the cross chain references, hence switching from a ``fragmented'' chain structure to a ``continuous'' one.
 
 \paragraph{Parallel blocktrees.}
 %
-We elaborate our construction now.
+Next, we elaborate on our construction.
 %
 We extend the parallel chain structure to \emph{parallel blocktrees} consisting of $m$ independent blocktrees.
 %
@@ -182,7 +182,7 @@ We also elaborate in~\cref{subsec:new-smr-protocol} on how to bootstrap the ledg
 \begin{remark} \label{remark:weak-agreement}
       Our usage of Weak Agreement to retrieve previous intervals is also adopted in the bootstrapping procedure of the distributed ledger protocol in~\cite{EC:GarKiaShe24}.
       %
-      Nonetheless, we stress that we adapt this technique to our new parallel blockchain construction, which serves bootstrapping with no knowledge of time and optimal corruption resiliency with dynamic participation, which cannot be achieved by the bootstrapping algorithm in~\cite{EC:GarKiaShe24}.
+      Nonetheless, we stress that we adapt this technique to our new parallel blockchain construction, which achieves bootstrapping with no knowledge of time and optimal corruption resiliency with dynamic participation, which cannot be achieved by the bootstrapping algorithm in~\cite{EC:GarKiaShe24}.
 \end{remark}
 
 \paragraph{The difficulty adjustment algorithm.}
@@ -218,4 +218,4 @@ I.e., for epoch $\epoch + 1$,
 %
 where $\varLambda$ is the number of blocks in epoch \epoch, and $\tau$ is the bound on the relative amount of difficulty that can be adjusted each time.
 
-In our analysis, we show that while the difficulty adjustment is performed on each chain independently, it can be set appropriately and stays close to the ideal block generation rate, thus accommodating the varying computational power.
+In our analysis, we show that while the difficulty adjustment is performed on each chain independently, it can be set appropriately to stay close to the ideal block generation rate, thus accommodating the varying computational power.
