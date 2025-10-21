@@ -213,7 +213,7 @@ This variation is proportional to the ratio of expected number of blocks $\varLa
 I.e., for epoch $\epoch + 1$,
 %
 \begin{equation} \label{eq:target-recalc}
-      T_{\epoch + 1} \triangleq \min \Big\{ \max \Big\{ \frac{\varLambda_{\mathsf{epoch}}}{\varLambda} \cdot T_{\epoch}, \frac{1}{\tau} \Big\}, \tau \Big\},
+      T_{\epoch + 1} \triangleq T_{\epoch} \cdot  \min \Big\{ \max \Big\{ \frac{\varLambda_{\mathsf{epoch}}}{\varLambda}, \frac{1}{\tau} \Big\}, \tau \Big\},
 \end{equation}
 %
 where $\varLambda$ is the number of blocks in epoch \epoch, and $\tau$ is the bound on the relative amount of difficulty that can be adjusted each time.
